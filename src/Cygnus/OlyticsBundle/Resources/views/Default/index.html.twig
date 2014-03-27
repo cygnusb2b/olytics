@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}Home{% endblock %} | Olytics</title>
+
+        <!-- Bootstrap -->
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css">
+
+        {% block stylesheets %}
+        {% endblock %}
+
+        <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+        <script type="text/javascript">
+            var _olytics = _olytics || [];
+            // _olytics.push(['_setDomainName', '.forconstructionpros.com']);
+            _olytics.push(['_setPID', 'rcl_fcp']);
+
+            (function() {
+                var d=document,
+                 g=d.createElement('script'),
+                 s=d.getElementsByTagName('script')[0];
+                 g.type='text/javascript';
+                 g.defer=true;
+                 g.async=true;
+                 g.src="/olytics.js";
+                 s.parentNode.insertBefore(g,s);
+             })();
+
+        </script>
+
+        <!--script type="text/javascript" src="{{ asset('/js/olytics.js') }}"></script-->
+
+        {% block javascripts %}
+        {% endblock %}
+
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        {% block head %}
+        {% endblock %}
+
+    </head>
+
+    <body>
+
+
+        <div class="container-fluid">
+            <div class="row">
+                    {% block content %}
+
+                    {% endblock %}
+            </div>
+        </div>
+
+        <!-- Include all compiled plugins (below), or include individual files as needed -->
+        <script type="text/javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    </body>
+
+</html>

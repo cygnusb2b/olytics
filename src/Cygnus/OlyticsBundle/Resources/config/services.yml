@@ -1,0 +1,22 @@
+parameters:
+    cygnus_olytics.data_formatter.generic.class: Cygnus\OlyticsBundle\DataFormatter\GenericFormatter
+    cygnus_olytics.events.website.request_factory.class: Cygnus\OlyticsBundle\Event\Website\WebsiteRequestFactory
+    cygnus_olytics.events.website.request_manager.class: Cygnus\OlyticsBundle\Event\Website\WebsiteRequestManager
+    cygnus_olytics.events.website.persistor.class: Cygnus\OlyticsBundle\Event\Website\WebsitePersistor
+    cygnus_olytics.bot_detector.class: Cygnus\OlyticsBundle\Detector\BotDetector
+
+services:
+    cygnus_olytics.bot_detector:
+        class: %cygnus_olytics.bot_detector.class%
+        arguments: [@kernel]
+    cygnus_olytics.data_formatter.generic:
+        class: %cygnus_olytics.data_formatter.generic.class%
+    cygnus_olytics.events.website.persistor:
+        class: %cygnus_olytics.events.website.persistor.class%
+        arguments: [@doctrine_mongodb.odm.default_connection]
+    cygnus_olytics.events.website.request_factory:
+        class: %cygnus_olytics.events.website.request_factory.class%
+        arguments: [@cygnus_olytics.data_formatter.generic]
+    cygnus_olytics.events.website.request_manager:
+        class: %cygnus_olytics.events.website.request_manager.class%
+        arguments: [@cygnus_olytics.events.website.request_factory, @cygnus_olytics.events.website.persistor]

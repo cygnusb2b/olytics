@@ -1,0 +1,11 @@
+cygnus_olytics_event_tracker:
+    pattern:  /events
+    defaults: { _controller: CygnusOlyticsBundle:Event:index }
+
+cygnus_olytics_library:
+    pattern:  /olytics.js
+    defaults: { _controller: CygnusOlyticsBundle:Js:index }
+
+cygnus_olytics_test_request:
+    pattern:  /test
+    defaults: { _controller: CygnusOlyticsBundle:Default:index }

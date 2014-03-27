@@ -1,0 +1,4 @@
+cygnus_olytics:
+    resource: "@CygnusOlyticsBundle/Resources/config/routing.yml"
+    prefix:   /
+

@@ -111,6 +111,9 @@ abstract class RequestFactory implements RequestFactoryInterface
 
     /**
      * Gets data from POST
+     * Will treat as JSON if the Content-Type is application/json, text/plain or null
+     * This allows support for XDomainRequest in IE8/9
+     * Otherwise it will treats as a common post (application/x-www-form-urlencoded)
      *
      * @param  Symfony\Component\HttpFoundation\Request $request
      * @return array The request data
@@ -119,7 +122,7 @@ abstract class RequestFactory implements RequestFactoryInterface
     {
         $requestData = array();
         $contentType = $request->getContentType();
-        if ($contentType == 'json') {
+        if (in_array($contentType, ['json', 'txt']) || is_null($request->headers->get('Content-Type'))) {
             // Treat as a POST BODY JSON request
             $decoded = @json_decode($request->getContent(), true);
             if (is_array($decoded)) $requestData = $decoded;
@@ -132,6 +135,8 @@ abstract class RequestFactory implements RequestFactoryInterface
 
     /**
      * Gets data from GET
+     * If the query string contains the 'enc' key, this will assume a base64 encoded JSON string
+     * Otherwise, it will simply read the query string as-is
      *
      * @param  Symfony\Component\HttpFoundation\Request $request
      * @return array The request data

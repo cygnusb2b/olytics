@@ -5,10 +5,15 @@ if (typeof _olytics !== 'object')  {
 if (typeof Olytics !== 'object') {
     
     Olytics = (function() {
-
         if (typeof console === "undefined" || typeof console.log === "undefined") {
             console = {};
             console.log = function() {};
+        }
+
+        if (typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^\s+|\s+$/g, ''); 
+            }
         }
 
         var
@@ -295,7 +300,7 @@ if (typeof Olytics !== 'object') {
                 parameterArray = arguments[i];
                 f = parameterArray.shift();
 
-                // console.log(f);
+                console.log(f);
 
                 if (isString(f)) {
                     asyncTracker[f].apply(asyncTracker, parameterArray);
@@ -465,11 +470,10 @@ if (typeof Olytics !== 'object') {
             this.init();
         }
 
-        function Request(trackerObject, endpoint)
+        function Request(trackerObject, primaryUrl)
         {
             var 
                 requestType = detectRequestSupport(),
-                primaryUrl = 'http://dev.olytics.localhost/events' + endpoint + '?_=' + rand(),
                 request = {
                     xhr: function(method, url, body) {
                         var xhr = new XMLHttpRequest();
@@ -479,7 +483,6 @@ if (typeof Olytics !== 'object') {
                     },
                     xdr: function(method, url, body) {
                         var xdr = new XDomainRequest();
-                        xdr.contentType = 'application/json';
                         xdr.open(method, url);
                         xdr.send(body);
                     },
@@ -504,8 +507,10 @@ if (typeof Olytics !== 'object') {
                     }
                 };
 
-            this.send = function(trackerObject)
+            this.send = function(trackerObject, primaryUrl)
             {
+                console.log(detectRequestSupport());
+
                 switch (requestType) {
                     case 'xhr':
                         var body = JSON.stringify(trackerObject);
@@ -537,8 +542,8 @@ if (typeof Olytics !== 'object') {
                 }
             }
 
-            if (isDefined(trackerObject)) {
-                this.send(trackerObject);
+            if (isDefined(trackerObject) && isDefined(primaryUrl)) {
+                this.send(trackerObject, primaryUrl);
             }
         }
 
@@ -546,6 +551,8 @@ if (typeof Olytics !== 'object') {
         {
             var
                 config = {
+                    trackerDomain: 'http://olytics.cygnus.com',
+                    baseEndpoint: '/events',
                     endpoint: endpoint || null,
                     domainName: documentAlias.domain,
                     cookie: {
@@ -643,6 +650,11 @@ if (typeof Olytics !== 'object') {
                     .pageType()
                     .envTimezone()
                     .envResolution();
+            }
+
+            function getTrackerUrl()
+            {
+                return config.trackerDomain + config.baseEndpoint + config.endpoint
             }
 
             function hasVisitorCookie()
@@ -844,35 +856,10 @@ if (typeof Olytics !== 'object') {
 
                 if (config.disabled === false && config.endpoint !== null) {
 
+                    console.log('logEvent fired');
+
                     var trackerObject = createTrackerObject(e);
-
-                    var request = new Request(trackerObject, config.endpoint);
-
-                    // request.send(trackerObject);
-
-                    // var xhr = new XMLHttpRequest();
-
-                    // var url = 'http://dev.olytics.localhost/events';
-                    // var body = JSON.stringify(trackerObject);
-
-                    // if (xhr) {
-                    //     xhr.open('POST', url, true);
-                    //     xhr.setRequestHeader('Content-Type', 'application/json');
-                    //     xhr.onreadystatechange = xhrResponseHandler;
-                    //     xhr.send(body);
-                    // }
-
-                    // $.ajax({
-                    //     url: 'http://dev.olytics.localhost/events?_=' + rand(),
-                    //     type: 'POST',
-                    //     crossDomain: true,
-                    //     contentType: 'application/json',
-                    //     data: JSON.stringify(trackerObject)
-                    // })
-
-                    // .done(function() {
-                    //     return true;
-                    // });
+                    var request = new Request(trackerObject, getTrackerUrl());
                 }
             }
 
@@ -940,6 +927,9 @@ if (typeof Olytics !== 'object') {
                 _setEndPoint: function (endpoint) {
                     config.endpoint = endpoint;
                 },
+                _setTrackerDomain: function (domain) {
+                    config.trackerDomain = domain;
+                },
                 _setPage: function (title, url) {
                     setConfig.pageTitle(title);
                     setConfig.pageUrl(url);
@@ -980,7 +970,7 @@ if (typeof Olytics !== 'object') {
 
         // find the call to setTrackerUrl or setProfileId (if any) and call them first
         for (i = 0; i < _olytics.length; i++) {
-            if (_olytics[i][0] === '_setDomainName' || _olytics[i][0] == '_setEndPoint') {
+            if (_olytics[i][0] === '_setDomainName' || _olytics[i][0] == '_setTrackerDomain' || _olytics[i][0] == '_setEndPoint') {
                 apply(_olytics[i]);
                 delete _olytics[i];
             }

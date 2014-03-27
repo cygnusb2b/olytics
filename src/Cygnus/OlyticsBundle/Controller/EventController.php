@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 class EventController extends Controller
 {
-    public function indexAction()
+    public function indexAction($vertical, $product)
     {
         // Get the incoming request
         $request = $this->get('request');
@@ -33,7 +33,7 @@ class EventController extends Controller
         $requestManager = $this->get('cygnus_olytics.events.website.request_manager');
         try {
             // Create and manage event from the HTTP request
-            $requestManager->createAndManage($request);
+            $requestManager->createAndManage($request, $vertical, $product);
             // Persist to the DB
             $requestManager->persist();
 

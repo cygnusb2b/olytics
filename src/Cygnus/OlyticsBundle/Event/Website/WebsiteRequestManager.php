@@ -42,8 +42,6 @@ class WebsiteRequestManager extends RequestManager
     public function manage(RequestInterface $eventRequest)
     {
         $this->eventRequest = $eventRequest;
-        $this->manageSession();
-        $this->manageContainer();
         $this->manageEvent();
     }
 
@@ -53,7 +51,8 @@ class WebsiteRequestManager extends RequestManager
                 $this->event, 
                 $this->relatedEntities,
                 $this->eventRequest->getVertical(), 
-                $this->eventRequest->getProduct()
+                $this->eventRequest->getProduct(),
+                $this->eventRequest->appendCustomer
             );
         }
     }
@@ -65,6 +64,8 @@ class WebsiteRequestManager extends RequestManager
 
     protected function manageEvent()
     {
+        $this->manageSession();
+
         $eventData = $this->eventRequest->getEvent();
         $entityData = $eventData->get('entity');
 
@@ -80,14 +81,7 @@ class WebsiteRequestManager extends RequestManager
         if (!is_null($eventData->get('data'))) {
             $this->event->setData($eventData->get('data'));
         }
-        $this->event->setContainer($this->container);
         $this->event->setSession($this->session);
-    }
-
-    protected function manageContainer()
-    {
-        $container = $this->eventRequest->getContainer();
-        $this->container = $this->hydrateEntity($container->all());
     }
 
     protected function manageSession()
@@ -143,9 +137,6 @@ class WebsiteRequestManager extends RequestManager
 
     protected function appendPageInfo(Entity &$page)
     {
-        $clientId = md5($page->getClientId());
-        $page->setClientId($clientId);
-
         $keyValues = $page->getKeyValues();
         if (array_key_exists('url', $keyValues)) {
             $parsedUrl = @parse_url($keyValues['url']);
@@ -159,14 +150,30 @@ class WebsiteRequestManager extends RequestManager
         }
     }
 
-    public function createAndManage(KernalRequest $request)
+    /**
+     * Creates a new EventRequest and manages it
+     *
+     * @param  Symfony\Component\HttpFoundation\Request $request
+     * @param  string $vertical The vertical
+     * @param  string $product  The product
+     * @return void
+     */
+    public function createAndManage(KernalRequest $request, $vertical, $product)
     {
-        $eventRequest = $this->createRequestFromFactory($request);
+        $eventRequest = $this->createRequestFromFactory($request, $vertical, $product);
         $this->manage($eventRequest);
     }
 
-    public function createRequestFromFactory(KernalRequest $request)
+    /**
+     * Creates a new EventRequest from a kernel Request (using the factory)
+     *
+     * @param  Symfony\Component\HttpFoundation\Request $request
+     * @param  string $vertical The vertical
+     * @param  string $product  The product
+     * @return void
+     */
+    public function createRequestFromFactory(KernalRequest $request, $vertical, $product)
     {
-        return $this->requestFactory->createFromRequest($request);
+        return $this->requestFactory->createFromRequest($request, $vertical, $product);
     }
 }

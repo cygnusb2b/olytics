@@ -17,17 +17,22 @@ class WebsitePersistor extends Persistor
 
     protected $product;
 
-    public function persist(EventInterface $event, array $relatedEntities, $vertical, $product) {
+    public function persist(EventInterface $event, array $relatedEntities, $vertical, $product, $appendCustomer = false) {
         $this->product = $product;
         $this->vertical = $vertical;
 
-        $this->persistEntity($event->getContainer());
+        $this->persistEntities($event, $relatedEntities);
+        $this->persistSession($event);
+        $this->persistEvent($event);
+    }
+
+    protected function persistEntities(WebsiteEvent $event, array $relatedEntities)
+    {
         $this->persistEntity($event->getEntity());
+
         foreach ($relatedEntities as $relatedEntity) {
             $this->persistEntity($relatedEntity);
         }
-        $this->persistSession($event);
-        $this->persistEvent($event);
     }
 
     protected function createQueryBuilder($dbName, $collectionName)
@@ -47,10 +52,6 @@ class WebsitePersistor extends Persistor
             'action'    => $event->getAction(),
             'clientId'  => $event->getEntity()->getClientId(),
             'sessionId' => $sessionId,
-            'container' => array(
-                'type'      => $event->getContainer()->getType(),
-                'clientId'  => $event->getContainer()->getClientId(),
-            ),
         );
 
         $eventData = $event->getData();

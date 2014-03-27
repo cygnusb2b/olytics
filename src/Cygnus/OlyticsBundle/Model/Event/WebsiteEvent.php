@@ -7,13 +7,6 @@ use Cygnus\OlyticsBundle\Model\Session\WebsiteSession;
 class WebsiteEvent extends AbstractEvent
 {
     /**
-     * The event container
-     *
-     * @var Cygnus\OlyticsBundle\Model\Metadata\Entity
-     */
-    protected $container;
-
-    /**
      * The event session
      *
      * @var Cygnus\OlyticsBundle\Model\Session\WebsiteSession
@@ -24,33 +17,11 @@ class WebsiteEvent extends AbstractEvent
     {
         $parentValid = AbstractEvent::isValid();
 
-        if ($parentValid && !empty($this->container) && !empty($this->session)) {
-            return ($this->container->isValid() && $this->session->isValid());
+        if ($parentValid && !empty($this->session)) {
+            return ($this->session->isValid());
         } else {
             return false;
         }
-    }
-
-    /**
-     * Set container
-     *
-     * @param Cygnus\OlyticsBundle\Model\Metadata\Entity $container
-     * @return self
-     */
-    public function setContainer(Entity $container)
-    {
-        $this->container = $container;
-        return $this;
-    }
-
-    /**
-     * Get container
-     *
-     * @return Cygnus\OlyticsBundle\Model\Metadata\Entity $container
-     */
-    public function getContainer()
-    {
-        return $this->container;
     }
 
     /**

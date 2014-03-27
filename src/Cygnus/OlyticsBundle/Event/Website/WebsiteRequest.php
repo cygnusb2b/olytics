@@ -6,36 +6,58 @@ use Symfony\Component\HttpFoundation\ParameterBag;
 
 class WebsiteRequest extends Request
 {
+    /**
+     * The session data for this request
+     *
+     * @var ParameterBag
+     */
     protected $session;
 
-    protected $container;
+    /**
+     * Flags whether the customer ID should be appending to previous sessions
+     *
+     * @var bool
+     */
+    public $appendCustomer;
 
-    public function __construct(array $session, array $container, array $event, $pid)
+    /**
+     * Creates a new WebsiteRequest
+     *
+     * @param  array  $session  The session data
+     * @param  array  $event    The event data
+     * @param  string $vertical The vertical
+     * @param  string $product  The product
+     * @return void
+     */
+    public function __construct(array $session, array $event, $vertical, $product, $appendCustomer = false)
+    {
+        $this->vertical = $vertical;
+        $this->product  = $product;
+        $this->appendCustomer = $appendCustomer;
+
+        $this->setSession($session)->setEvent($event);
+    }
+
+    /**
+     * Sets the session data
+     *
+     * @param  array $session
+     * @return self
+     */
+    public function setSession(array $session)
     {
         $this->session = new ParameterBag($session);
-        $this->container = new ParameterBag($container);
-        $this->event = new ParameterBag($event);
-
-        $this->setPID($pid);
+        return $this;
     }
 
-    public function setPID($pid)
-    {
-        if (!is_null($pid)) {
-            $parts = explode('_', $pid);
-            if (isset($parts[0])) $this->vertical = $parts[0];
-            if (isset($parts[1])) $this->product = $parts[1];
-        }
-    }
-
+    /**
+     * Gets the session data
+     *
+     * @return ParameterBag
+     */
     public function getSession()
     {
         return $this->session;
-    }
-
-    public function getContainer()
-    {
-        return $this->container;
     }
 
 }

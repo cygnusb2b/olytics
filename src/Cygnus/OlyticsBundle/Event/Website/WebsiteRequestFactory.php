@@ -8,16 +8,26 @@ use Symfony\Component\HttpFoundation\Request as KernalRequest;
 class WebsiteRequestFactory extends RequestFactory
 {
 
-    public function create(ParameterBag $requestData)
+    /**
+     * Creates a new Event\Websites\WebsiteRequest from a ParameterBag of request data
+     *
+     * @param  ParameterBag $requestData The event request data
+     * @param  string       $vertical    The vertical
+     * @param  string       $product     The product
+     * @return Cygnus\OlyticsBundle\Event\Website\WebsiteRequest
+     */
+    public function create(ParameterBag $requestData, $vertical, $product)
     {
-        foreach (['session', 'container', 'event'] as $key) {
+        foreach (['session', 'event'] as $key) {
             $$key = $this->asArray($requestData->get($key));
         }
-        return new WebsiteRequest($session, $container, $event, $requestData->get('pid'));
+        $appendCustomer = ($requestData->get('appendCustomer') === true) ? true : false;
+        return new WebsiteRequest($session, $event, $vertical, $product, $appendCustomer);
     }
 
     /**
      * Gets the request data from a Request object
+     * Overloads parent in order to append server-side data to the session
      *
      * @param  Symfony\Component\HttpFoundation\Request $request
      * @param  array The request data
@@ -34,12 +44,14 @@ class WebsiteRequestFactory extends RequestFactory
      *
      * @param  array The request data
      * @param  Symfony\Component\HttpFoundation\Request $request
+     * @todo   Parse the User Agent string into a meaningful object
      * @return array The appended request data
      */
     private function appendSessionData(array $requestData, KernalRequest $request)
     {
         $requestData['session']['ip'] = $request->getClientIp();
         $requestData['session']['ua'] = $request->headers->get('USER_AGENT');
+        // @todo Do user agent parse here.
         return $requestData;
     }
 

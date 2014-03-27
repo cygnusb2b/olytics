@@ -27,28 +27,32 @@ abstract class RequestFactory implements RequestFactoryInterface
     }
 
     /**
-     * Creates a new EventRequest from a Request object
+     * Creates a new EventRequest from a kernel Request object
      *
      * @param  Symfony\Component\HttpFoundation\Request $request
-     * @return void
+     * @param  string $vertical The vertical
+     * @param  string $product  The product
+     * @return mixed The newly created EventRequst
      */
-    public function createFromRequest(KernalRequest $request)
+    public function createFromRequest(KernalRequest $request, $vertical, $product)
     {
         $requestData = $this->getDataFromRequest($request);
         $requestData = $this->format($requestData);
-        return $this->create($requestData);
+        return $this->create($requestData, $vertical, $product);
     }
 
     /**
      * Creates a new EventRequest from an array
      *
      * @param  array $data
-     * @return void
+     * @param  string $vertical The vertical
+     * @param  string $product  The product
+     * @return mixed The newly created EventRequst
      */
-    public function createFromArray(array $data)
+    public function createFromArray(array $data, $vertical, $product)
     {
         $requestData = $this->format($data);
-        return $this->create($requestData);
+        return $this->create($requestData, $vertical, $product);
     }
 
     /**
@@ -85,12 +89,14 @@ abstract class RequestFactory implements RequestFactoryInterface
     }
 
     /**
-     * Creates a new EventRequest from an array of request data
+     * Creates a new EventRequest from a ParameterBag of data
      *
-     * @param  array $requestData
-     * @return void
+     * @param  ParameterBag $requestData
+     * @param  string $vertical The vertical
+     * @param  string $product  The product
+     * @return mixed The newly created EventRequst
      */
-    abstract public function create(ParameterBag $requestData);
+    abstract public function create(ParameterBag $requestData, $vertical, $product);
 
     /**
      * Returns a value as an empty array if it isn't an array
@@ -137,6 +143,8 @@ abstract class RequestFactory implements RequestFactoryInterface
             // Base64 and JSON decode
             $decoded = @json_decode(@base64_decode($request->query->get('enc')), true);
             if (is_array($decoded)) $requestData = $decoded;
+        } else {
+            $requestData = $request->query->all();
         }
         return $requestData;
     }

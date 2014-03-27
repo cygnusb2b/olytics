@@ -465,11 +465,11 @@ if (typeof Olytics !== 'object') {
             this.init();
         }
 
-        function Request(trackerObject)
+        function Request(trackerObject, endpoint)
         {
             var 
                 requestType = detectRequestSupport(),
-                primaryUrl = 'http://dev.olytics.localhost/events?_=' + rand(),
+                primaryUrl = 'http://dev.olytics.localhost/events' + endpoint + '?_=' + rand(),
                 request = {
                     xhr: function(method, url, body) {
                         var xhr = new XMLHttpRequest();
@@ -542,11 +542,11 @@ if (typeof Olytics !== 'object') {
             }
         }
 
-        function Tracker(pid)
+        function Tracker(endpoint)
         {
             var
                 config = {
-                    pid: pid || null,
+                    endpoint: endpoint || null,
                     domainName: documentAlias.domain,
                     cookie: {
                         visitor: {
@@ -810,7 +810,7 @@ if (typeof Olytics !== 'object') {
 
             function getPageViewEvent()
             {
-                return new Entity('page', config.page.url, config.page);
+                return new Entity('page', '$hash::' + config.page.url, config.page);
             }
 
             function trackPageView()
@@ -842,11 +842,11 @@ if (typeof Olytics !== 'object') {
             {
                 detectSetVisitor();
 
-                if (config.disabled === false && config.pid !== null) {
+                if (config.disabled === false && config.endpoint !== null) {
 
                     var trackerObject = createTrackerObject(e);
 
-                    var request = new Request(trackerObject);
+                    var request = new Request(trackerObject, config.endpoint);
 
                     // request.send(trackerObject);
 
@@ -937,8 +937,8 @@ if (typeof Olytics !== 'object') {
                 _setDomainName: function(domain) {
                     setConfig.domainName(domain);
                 },
-                _setPID: function (pid) {
-                    config.pid = pid;
+                _setEndPoint: function (endpoint) {
+                    config.endpoint = endpoint;
                 },
                 _setPage: function (title, url) {
                     setConfig.pageTitle(title);
@@ -980,7 +980,7 @@ if (typeof Olytics !== 'object') {
 
         // find the call to setTrackerUrl or setProfileId (if any) and call them first
         for (i = 0; i < _olytics.length; i++) {
-            if (_olytics[i][0] === '_setDomainName' || _olytics[i][0] == '_setPID') {
+            if (_olytics[i][0] === '_setDomainName' || _olytics[i][0] == '_setEndPoint') {
                 apply(_olytics[i]);
                 delete _olytics[i];
             }
@@ -997,9 +997,9 @@ if (typeof Olytics !== 'object') {
 
         Olytics = 
         {
-            createTracker: function (pid) 
+            createTracker: function (endpoint) 
             {
-                return new Tracker(pid);
+                return new Tracker(endpoint);
             },
 
             getAsyncTracker: function () 

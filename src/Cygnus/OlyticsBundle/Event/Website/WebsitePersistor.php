@@ -21,10 +21,13 @@ class WebsitePersistor extends Persistor
         $this->product = $product;
         $this->vertical = $vertical;
 
-
         $this->persistEntities($event, $relatedEntities);
         $this->persistSession($event);
         $this->persistEvent($event);
+
+        if ($appendCustomer === true) {
+            $this->appendCustomer($event);
+        }
     }
 
     protected function persistEntities(WebsiteEvent $event, array $relatedEntities)
@@ -97,6 +100,30 @@ class WebsitePersistor extends Persistor
             ->update()
             ->upsert(true)
             ->field('event')->equals($upsertEvent)
+            ->setNewObj($upsertObj)
+            ->getQuery()
+            ->execute();
+    }
+
+    protected function appendCustomer(WebsiteEvent $event)
+    {
+        $dbName = 'olytics_cygnus_' . $this->vertical . '_' . $this->product; 
+        $session = $event->getSession();
+
+        $visitorId = new MongoBinData($session->getVisitorId(), MongoBinData::UUID);
+
+        $upsertObj = array(
+            '$set'  => array(
+                'customerId' => $session->getCustomerId(),
+            ),
+        );
+
+        $queryBuilder = $this->createQueryBuilder($dbName, 'session');
+
+        $queryBuilder
+            ->update()
+            ->multiple(true)
+            ->field('visitorId')->equals($visitorId)
             ->setNewObj($upsertObj)
             ->getQuery()
             ->execute();

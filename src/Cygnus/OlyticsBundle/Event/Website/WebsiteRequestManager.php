@@ -67,6 +67,7 @@ class WebsiteRequestManager extends RequestManager
         $this->manageSession();
 
         $eventData = $this->eventRequest->getEvent();
+
         $entityData = $eventData->get('entity');
 
         if (!is_array($entityData)) $entityData = array();
@@ -78,8 +79,20 @@ class WebsiteRequestManager extends RequestManager
         if (!is_null($eventData->get('createdAt'))) {
             $this->event->setCreatedAt($eventData->get('createdAt'));
         }
+
         if (!is_null($eventData->get('data'))) {
             $this->event->setData($eventData->get('data'));
+        }
+
+        $relatedEntityData = $eventData->get('relatedEntities');
+        if (is_array($relatedEntityData) && !empty($relatedEntityData)) {
+            foreach ($relatedEntityData as $relatedEntity) {
+                $relEntityObj = $this->hydrateEntity($relatedEntity);
+                if ($relEntityObj->isValid()) {
+                    $this->event->addRelatedEntity($relEntityObj);
+                }
+                
+            }
         }
         $this->event->setSession($this->session);
     }

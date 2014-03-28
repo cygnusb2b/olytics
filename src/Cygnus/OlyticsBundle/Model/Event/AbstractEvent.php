@@ -23,6 +23,13 @@ abstract class AbstractEvent implements EventInterface
     protected $entity;
 
     /**
+     * Metadata entities related to this event
+     *
+     * @var array
+     */
+    protected $relatedEntities = array();
+
+    /**
      * Event created at date
      *
      * @var DateTime
@@ -98,6 +105,48 @@ abstract class AbstractEvent implements EventInterface
     public function getEntity()
     {
         return $this->entity;
+    }
+
+    /**
+     * Add relatedEntity
+     *
+     * @param Cygnus\OlyticsBundle\Model\Metadata\Entity $relatedEntity
+     */
+    public function addRelatedEntity(Entity $relatedEntity)
+    {
+        if ($relatedEntity->isValid()) {
+            $this->relatedEntities[] = $relatedEntity;
+        }
+        return $this;
+    }
+
+    /**
+     * Remove relatedEntity
+     *
+     * @param Cygnus\OlyticsBundle\Model\Metadata\Entity $relatedEntity
+     */
+    public function removeRelatedEntity(Entity $relatedEntity)
+    {
+        $key = array_search($relatedEntity, $this->relatedEntities, true);
+        if ($key !== false) {
+            unset($this->relatedEntities[$key]);
+        }
+        return $this;
+    }
+
+    public function getRelatedEntities()
+    {
+        return $this->relatedEntities;
+    }
+
+
+    public function setRelatedEntities(array $relatedEntities)
+    {
+        foreach ($relatedEntities as $relatedEntity) {
+            if ($relatedEntity instanceof Entity) {
+                $this->addRelatedEntity($relatedEntity);
+            }
+        }
     }
 
     /**

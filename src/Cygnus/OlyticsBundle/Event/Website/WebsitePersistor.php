@@ -21,6 +21,7 @@ class WebsitePersistor extends Persistor
         $this->product = $product;
         $this->vertical = $vertical;
 
+
         $this->persistEntities($event, $relatedEntities);
         $this->persistSession($event);
         $this->persistEvent($event);
@@ -30,7 +31,12 @@ class WebsitePersistor extends Persistor
     {
         $this->persistEntity($event->getEntity());
 
+        foreach ($event->getRelatedEntities() as $relatedEntity) {
+            $this->persistEntity($relatedEntity);
+        }
+
         foreach ($relatedEntities as $relatedEntity) {
+
             $this->persistEntity($relatedEntity);
         }
     }
@@ -48,6 +54,8 @@ class WebsitePersistor extends Persistor
 
         $sessionId = new MongoBinData($event->getSession()->getId(), MongoBinData::UUID);
 
+        // Persist the related entities
+
         $upsertEvent = array(
             'action'    => $event->getAction(),
             'clientId'  => $event->getEntity()->getClientId(),
@@ -58,6 +66,17 @@ class WebsitePersistor extends Persistor
 
         if (!empty($eventData)) {
             $upsertEvent['data'] = $eventData;
+        }
+
+        $relatedEntities = $event->getRelatedEntities();
+        if (!empty($relatedEntities)) {
+            foreach ($relatedEntities as $entity) {
+                $upsertEvent['relatedEntities'][] = array(
+                    'type'      => $entity->getType(),
+                    'clientId'  => $entity->getClientId(),
+                );
+            }
+            
         }
 
         $upsertObj = array(
@@ -90,7 +109,10 @@ class WebsitePersistor extends Persistor
 
         $sessionId = new MongoBinData($session->getId(), MongoBinData::UUID);
         $eventCreated = new MongoDate($event->getCreatedAt()->getTimestamp());
+        $sessionCreated = new MongoDate($session->getCreatedAt()->getTimestamp());
         $eventCountKey = 'events.' . $event->getEntity()->getType();
+
+        $sessionTime = $event->getCreatedAt()->getTimestamp() - $session->getCreatedAt()->getTimestamp();
 
         $upsertObj = array(
             '$set'  => array(
@@ -98,10 +120,11 @@ class WebsitePersistor extends Persistor
             ),
             '$inc'  => array(
                 'events.total'  => 1,
+                'time'          => $sessionTime,
                 $eventCountKey  => 1,
             ),
             '$setOnInsert'  => array(
-                'firstEvent'    => $eventCreated,
+                'createdAt'     => $sessionCreated,
                 'sessionId'     => $sessionId,
                 'visitorId'     => new MongoBinData($session->getVisitorId(), MongoBinData::UUID),
                 'customerId'    => $session->getCustomerId(),
@@ -138,19 +161,25 @@ class WebsitePersistor extends Persistor
 
         if (!empty($keyValues)) {
             foreach ($keyValues as $key => $value) {
+                // Specifiying keyValues.key ensures that Mongo won't remove key/value pairs 'accidentally'
+                // e.g. if a persisted object has key1, key2, key3, but this object only has key1 and key2
+                // This update logic will ensure that key3 remains on the object
                 if ($value instanceof \DateTime) {
-                    $upsertObj['$set']['keyValues'][$key] = new MongoDate($value->getTimestamp());
+                    $upsertObj['$set']['keyValues.' . $key] = new MongoDate($value->getTimestamp());
                 } else {
-                    $upsertObj['$set']['keyValues'][$key] = $value;
+                    $upsertObj['$set']['keyValues.' . $key] = $value;
                 }
             }
         }
 
         $relatedTo = $entity->getRelatedTo();
 
+        // $addToSet ensures that previously set relatedTo arrays are not overwritten
+        // Drawback: relatedTo removals will not be reflected
         if (!empty($relatedTo)) {
+            $upsertObj['$addToSet']['relatedTo']['$each'] = array();
             foreach ($relatedTo as $relatedEntity) {
-                $upsertObj['$set']['relatedTo'][] = array(
+                $upsertObj['$addToSet']['relatedTo']['$each'][] = array(
                     'type'      => $relatedEntity->getType(),
                     'clientId'  => $relatedEntity->getClientId(),
                     'relFields' => $relatedEntity->getRelFields(),

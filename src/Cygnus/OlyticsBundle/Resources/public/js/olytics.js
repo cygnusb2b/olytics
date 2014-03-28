@@ -188,6 +188,11 @@ if (typeof Olytics !== 'object') {
             return typeof property === 'object';
         }
 
+        function isArray(obj) 
+        {
+            return Object.prototype.toString.call(obj) === '[object Array]';
+        }
+
         function isFunction(property) 
         {
             return typeof property === 'function';
@@ -339,7 +344,7 @@ if (typeof Olytics !== 'object') {
                     if (isDefined(entity.type)) this.setType(entity.type);
                     if (isDefined(entity.clientId)) this.setClientId(entity.clientId);
                     if (isDefined(entity.keyValues)) this.setKeyValues(entity.keyValues);
-                    if (isDefined(entity.relFields)) this.setRelFields(entity.relatedTo);
+                    if (isDefined(entity.relFields)) this.setRelFields(entity.relFields);
                 }
                 return this;
             }
@@ -422,7 +427,7 @@ if (typeof Olytics !== 'object') {
             this.init();
         }
 
-        function Event(action, entity, data, createdAt)
+        function Event(action, entity, relatedEntities, data, createdAt)
         {
             this.setAction = function(value)
             {
@@ -438,6 +443,22 @@ if (typeof Olytics !== 'object') {
             {
                 var d = new Date();
                 this.createdAt = (value instanceof Date) ? value.toGMTString() : d.toGMTString();
+            }
+
+            this.setRelatedEntities = function(value)
+            {
+                this.relatedEntities = [];
+                if (isArray(value)) {
+                    for (var n = 0; n < value.length; n++) {
+                        if (value[n] instanceof Entity) {
+                            if (value[n].isValid()) this.relatedEntities.push(value[n]);
+                        } else if (isObject(value)) {
+                            var e = new Entity();
+                            e.hydrate(value[n]);
+                            if (e.isValid()) this.relatedEntities.push(e);
+                        }
+                    }
+                }
             }
 
             this.setEntity = function(value)
@@ -465,6 +486,7 @@ if (typeof Olytics !== 'object') {
                 this.setEntity(entity);
                 this.setData(data)
                 this.setCreatedAt(createdAt);
+                this.setRelatedEntities(relatedEntities);
             }
 
             this.init();
@@ -509,8 +531,6 @@ if (typeof Olytics !== 'object') {
 
             this.send = function(trackerObject, primaryUrl)
             {
-                console.log(detectRequestSupport());
-
                 switch (requestType) {
                     case 'xhr':
                         var body = JSON.stringify(trackerObject);
@@ -812,9 +832,9 @@ if (typeof Olytics !== 'object') {
                 setCookie('session', value);
             }
 
-            function trackEvent(action, entity, data)
+            function trackEvent(action, entity, relatedTo, data)
             {
-                var e = new Event(action, entity, data);
+                var e = new Event(action, entity, relatedTo, data);
                 if (e.isValid()) {
                     logEvent(e);
                 }
@@ -835,7 +855,7 @@ if (typeof Olytics !== 'object') {
                 var trackerObject = {
                     pid: config.pid,
                     session: session,
-                    container: getPageViewEvent(),
+                    // container: getPageViewEvent(),
                     event: e,
                     appendCustomer: config.appendCustomer
                 };
@@ -856,7 +876,7 @@ if (typeof Olytics !== 'object') {
 
                 if (config.disabled === false && config.endpoint !== null) {
 
-                    console.log('logEvent fired');
+                    // console.log('logEvent fired');
 
                     var trackerObject = createTrackerObject(e);
                     var request = new Request(trackerObject, getTrackerUrl());
@@ -940,8 +960,8 @@ if (typeof Olytics !== 'object') {
                 _setPageType: function (type) {
                     setConfig.pageType(type);
                 },
-                _trackEvent: function (action, entity, data) {
-                    trackEvent(action, entity, data);
+                _trackEvent: function (action, entity, relatedTo, data) {
+                    trackEvent(action, entity, relatedTo, data);
                 },
                 _trackPageview: function () {
                     trackPageView();

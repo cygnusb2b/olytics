@@ -52,12 +52,7 @@ class EventController extends Controller
     public function handleResponse(Request $request, $responseCode = 200, array $responseBody = array())
     {
         // Set the response skeleton
-        $globalHeaders = array(
-            'Expires'       => 'Sat, 01 Jan 2000 01:01:01 GMT',
-            'Cache-Control' => 'private, no-cache, no-cache=Set-Cookie, max-age=0, s-maxage=0',
-            'Pragma'        => 'no-cache',
-        );
-        $response = new Response('', $responseCode, $globalHeaders);
+        $response = new Response('', $responseCode);
 
         switch ($request->getMethod()) {
             case 'GET':
@@ -76,6 +71,8 @@ class EventController extends Controller
             case 'OPTIONS':
                 // Send CORS response
                 extract($this->buildCorsResponse());
+                $response->setPublic();
+                $response->setSharedMaxAge(60*60*24*30);
                 break;
             default:
                 // Send image beacon
@@ -98,6 +95,9 @@ class EventController extends Controller
             'headers'   => array(
                 'Content-Type'  => 'application/json',
                 'Content-Length'=> strlen($content),
+                'Expires'       => 'Sat, 01 Jan 2000 01:01:01 GMT',
+                'Cache-Control' => 'private, no-cache, no-cache=Set-Cookie, max-age=0, s-maxage=0',
+                'Pragma'        => 'no-cache',
             ),
         );
     }
@@ -111,6 +111,9 @@ class EventController extends Controller
                 'Content-Type'                  => 'application/json',
                 'Content-Length'                => strlen($content),
                 'Access-Control-Allow-Origin'   => '*',
+                'Expires'       => 'Sat, 01 Jan 2000 01:01:01 GMT',
+                'Cache-Control' => 'private, no-cache, no-cache=Set-Cookie, max-age=0, s-maxage=0',
+                'Pragma'        => 'no-cache',
             ),
         );
     }
@@ -124,7 +127,7 @@ class EventController extends Controller
                 'Access-Control-Allow-Origin'   => '*',
                 'Access-Control-Allow-Methods'  => $this->getAccessControlAllowMethods(),
                 'Access-Control-Allow-Headers'  => $this->getAccessControlAllowHeaders(),
-                // 'Access-Control-Max-Age'        => 60*60*24*30 // One month, in seconds
+                'Access-Control-Max-Age'        => 60*60*24 // One day, in seconds
             ),
         );
     }
@@ -150,6 +153,9 @@ class EventController extends Controller
             'headers'   => array(
                 'Content-Type'      => 'image/gif',
                 'Content-Length'    => strlen($content),
+                'Expires'       => 'Sat, 01 Jan 2000 01:01:01 GMT',
+                'Cache-Control' => 'private, no-cache, no-cache=Set-Cookie, max-age=0, s-maxage=0',
+                'Pragma'        => 'no-cache',
             ),
         );
     }

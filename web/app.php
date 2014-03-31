@@ -16,6 +16,7 @@ $apcLoader->register(true);
 */
 
 $request = Request::createFromGlobals();
+Request::setTrustedProxies(array('192.168.0.1/22'));
 
 $parts = explode('.', $request->server->get('SERVER_NAME'));
 

@@ -44,6 +44,8 @@ class JsController extends Controller
         );
 
         $response = new Response($content, 200, $headers);
+        $response->setPublic();
+        $response->setSharedMaxAge(60*60*24);
         $response->setLastModified($modified);
 
         return $response;

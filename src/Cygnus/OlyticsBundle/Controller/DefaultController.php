@@ -7,6 +7,7 @@ class DefaultController extends Controller
 {
     public function indexAction()
     {
-        return $this->render('CygnusOlyticsBundle:Default:index.html.twig');
+        $serviceHost = $this->container->getParameter('cygnus_olytics.host');
+        return $this->render('CygnusOlyticsBundle:Default:index.html.twig', array('serviceHost' => $serviceHost));
     }
 }

@@ -13,7 +13,7 @@ services:
         class: %cygnus_olytics.data_formatter.generic.class%
     cygnus_olytics.events.website.persistor:
         class: %cygnus_olytics.events.website.persistor.class%
-        arguments: [@doctrine_mongodb.odm.default_connection]
+        arguments: [@doctrine_mongodb.odm.olytics_connection]
     cygnus_olytics.events.website.request_factory:
         class: %cygnus_olytics.events.website.request_factory.class%
         arguments: [@cygnus_olytics.data_formatter.generic]

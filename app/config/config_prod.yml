@@ -14,9 +14,10 @@ imports:
 monolog:
     handlers:
         main:
-            type:         fingers_crossed
-            action_level: error
-            handler:      nested
+            type:           gelf
+            publisher:
+                hostname:   log01.cygnuspub.com
+            level:          warning 
         nested:
             type:  stream
             path:  "%kernel.logs_dir%/%kernel.environment%.log"

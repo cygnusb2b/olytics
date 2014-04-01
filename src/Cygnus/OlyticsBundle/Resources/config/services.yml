@@ -6,6 +6,11 @@ parameters:
     cygnus_olytics.bot_detector.class: Cygnus\OlyticsBundle\Detector\BotDetector
 
 services:
+    cygnus_olytics.graylog_processor:
+        class: Cygnus\OlyticsBundle\Processor\Graylog
+        arguments:  [@service_container]
+        tags:
+            - { name: monolog.processor, method: processRecord }
     cygnus_olytics.bot_detector:
         class: %cygnus_olytics.bot_detector.class%
         arguments: [@kernel]

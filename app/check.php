@@ -59,4 +59,5 @@ function echo_requirement(Requirement $requirement)
 function echo_title($title)
 {
     echo "\n** $title **\n\n";
-}
+} 
+

@@ -1,3 +1,7 @@
+# cygnus_curl:
+#     resource: "@CygnusCurlBundle/Resources/config/routing.yml"
+#     prefix:   /
+
 cygnus_olytics:
     resource: "@CygnusOlyticsBundle/Resources/config/routing.yml"
     prefix:   /

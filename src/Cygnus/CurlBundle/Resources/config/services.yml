@@ -1,0 +1,17 @@
+parameters:
+    cygnus_curl.kernel.class: Cygnus\CurlBundle\Curl\Kernel
+    cygnus_curl.client.class: Cygnus\CurlBundle\Curl\Client
+    cygnus_curl.processor.header.class: Cygnus\CurlBundle\Curl\Processor\ResponseHeaderProcessor
+    cygnus_curl.processor.body.class: Cygnus\CurlBundle\Curl\Processor\ResponseBodyProcessor
+
+services:
+    cygnus_curl.processor.header:
+        class: %cygnus_curl.processor.header.class%
+    cygnus_curl.processor.body:
+        class: %cygnus_curl.processor.body.class%
+    cygnus_curl.client:
+        class: %cygnus_curl.client.class%
+        arguments: [@cygnus_curl.processor.header, @cygnus_curl.processor.body]
+    cygnus_curl.kernel:
+        class: %cygnus_curl.kernel.class%
+        arguments: [@cygnus_curl.client]

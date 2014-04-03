@@ -21,8 +21,15 @@
         "incenteev/composer-parameter-handler": "~2.0",
         "doctrine/mongodb-odm": "1.0.*dev",
         "doctrine/mongodb-odm-bundle": "3.0.*dev",
-        "mlehner/gelf-php": "*"
+        "mlehner/gelf-php": "*",
+        "cygnus/api-suite-bundle": "dev-master"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@cygnus.git.beanstalkapp.com:/cygnus/api-suite-bundle.git"
+        }
+    ],
     "scripts": {
         "post-install-cmd": [
             "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",

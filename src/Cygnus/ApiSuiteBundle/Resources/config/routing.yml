@@ -1,3 +1,0 @@
-cygnus_api_suite_homepage:
-    pattern:  /hello/{name}
-    defaults: { _controller: CygnusApiSuiteBundle:Default:index }

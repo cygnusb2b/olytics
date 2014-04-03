@@ -1,0 +1,22 @@
+parameters:
+    cygnus_api_suite.curl.kernel.class: Cygnus\ApiSuiteBundle\RemoteKernel\Curl\RemoteKernel
+    cygnus_api_suite.curl.client.class: Cygnus\ApiSuiteBundle\RemoteKernel\Curl\Client
+    cygnus_api_suite.curl.processor.header.class: Cygnus\ApiSuiteBundle\RemoteKernel\Curl\Processor\ResponseHeaderProcessor
+    cygnus_api_suite.curl.processor.body.class: Cygnus\ApiSuiteBundle\RemoteKernel\Curl\Processor\ResponseBodyProcessor
+    cygnus_api_suite.api_client.omeda.class: Cygnus\ApiSuiteBundle\ApiClient\Omeda\ApiClientOmeda
+
+services:
+    cygnus_api_suite.curl.header_processor:
+        class: %cygnus_api_suite.curl.processor.header.class%
+    cygnus_api_suite.curl.body_processor:
+        class: %cygnus_api_suite.curl.processor.body.class%
+    cygnus_api_suite.curl.client:
+        class: %cygnus_api_suite.curl.client.class%
+        arguments: [@cygnus_api_suite.curl.header_processor, @cygnus_api_suite.curl.body_processor]
+    cygnus_api_suite.curl.kernel:
+        class: %cygnus_api_suite.curl.kernel.class%
+        arguments: [@cygnus_api_suite.curl.client]
+    cygnus_api_suite.api_client.omeda:
+        class: %cygnus_api_suite.api_client.omeda.class%
+        calls:
+             - [setRemoteHttpKernel, [@cygnus_api_suite.curl.kernel]]

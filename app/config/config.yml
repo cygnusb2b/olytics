@@ -44,7 +44,7 @@ assetic:
 
 cygnus_olytics:
     connection:
-        server: mongodb://db9.cygnuspub.com:27017 #mongodb://204.180.130.164:27017 #
+        server: mongodb://204.180.130.164:27017 #mongodb://db9.cygnuspub.com:27017
         options: {}
     host: olytics.cygnus.com
 

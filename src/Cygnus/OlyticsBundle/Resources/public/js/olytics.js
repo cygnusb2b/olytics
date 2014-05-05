@@ -636,6 +636,18 @@ if (typeof Olytics !== 'object') {
                         config.page.type = (isDefined(type)) ? type : null;
                         return this;
                     },
+                    envWindowSize: function() {
+                        var pixelRatio = (new RegExp('Mac OS X.*Safari/')).test(navigatorAlias.userAgent) ? windowAlias.devicePixelRatio || 1 : 1;
+                        
+                        var w = Math.max(documentAlias.documentElement.clientWidth, windowAlias.innerWidth || 0) * pixelRatio;
+                        var h = Math.max(documentAlias.documentElement.clientHeight, windowAlias.innerHeight || 0) * pixelRatio;
+
+                        config.env.windowRes = {};
+                        config.env.windowRes.width = w;
+                        config.env.windowRes.height = h;
+
+                        return this;
+                    },
                     envResolution: function(width, height) {
                         var pixelRatio = (new RegExp('Mac OS X.*Safari/')).test(navigatorAlias.userAgent) ? windowAlias.devicePixelRatio || 1 : 1;
                         config.env.res = {};
@@ -669,7 +681,8 @@ if (typeof Olytics !== 'object') {
                     .pageTitle()
                     .pageType()
                     .envTimezone()
-                    .envResolution();
+                    .envResolution()
+                    .envWindowSize();
             }
 
             function getTrackerUrl()

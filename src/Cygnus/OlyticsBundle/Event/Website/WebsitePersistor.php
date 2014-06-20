@@ -139,7 +139,8 @@ class WebsitePersistor extends Persistor
         $sessionCreated = new MongoDate($session->getCreatedAt()->getTimestamp());
         $eventCountKey = 'events.' . $event->getEntity()->getType();
 
-        $sessionTime = $event->getCreatedAt()->getTimestamp() - $session->getCreatedAt()->getTimestamp();
+        // Removing session time, because $sessionCreated is not reliable from the front-end
+        // $sessionTime = $event->getCreatedAt()->getTimestamp() - $session->getCreatedAt()->getTimestamp();
 
         $upsertObj = array(
             '$set'  => array(
@@ -147,11 +148,11 @@ class WebsitePersistor extends Persistor
             ),
             '$inc'  => array(
                 'events.total'  => 1,
-                'time'          => $sessionTime,
+                //'time'          => $sessionTime,
                 $eventCountKey  => 1,
             ),
             '$setOnInsert'  => array(
-                'createdAt'     => $sessionCreated,
+                'createdAt'     => new MongoDate(),
                 'sessionId'     => $sessionId,
                 'visitorId'     => new MongoBinData($session->getVisitorId(), MongoBinData::UUID),
                 'customerId'    => $session->getCustomerId(),

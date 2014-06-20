@@ -64,6 +64,7 @@ class WebsiteRequestManager extends RequestManager
 
     protected function manageEvent()
     {
+
         $this->manageSession();
 
         $eventData = $this->eventRequest->getEvent();
@@ -76,9 +77,7 @@ class WebsiteRequestManager extends RequestManager
         $this->event = new WebsiteEvent();
         $this->event->setAction($eventData->get('action'));
         $this->event->setEntity($this->eventEntity);
-        if (!is_null($eventData->get('createdAt'))) {
-            $this->event->setCreatedAt($eventData->get('createdAt'));
-        }
+        $this->event->setCreatedAt(time());
 
         if (!is_null($eventData->get('data'))) {
             $this->event->setData($eventData->get('data'));
@@ -101,6 +100,11 @@ class WebsiteRequestManager extends RequestManager
     {
         $this->session = new WebsiteSession();
         foreach ($this->eventRequest->getSession() as $key => $value) {
+
+            if ($key == 'createdAt') {
+                $value = time();
+            }
+
             $method = 'set' . ucwords($key);
             if (method_exists($this->session, $method)) {
                 $this->session->$method($value);

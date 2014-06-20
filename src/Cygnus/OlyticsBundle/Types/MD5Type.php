@@ -8,7 +8,6 @@ class MD5Type extends AbstractType
     public static function convert($value) {
 
         if ($value === null) {
-
             return null;
         }
 

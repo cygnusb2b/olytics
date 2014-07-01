@@ -7,8 +7,9 @@ class GenericFormatter extends AbstractFormatter
 {
 
     protected $types = array(
-        'date'  => 'Cygnus\OlyticsBundle\Types\DateType',
-        'hash'  => 'Cygnus\OlyticsBundle\Types\MD5Type',
+        'date'      => 'Cygnus\OlyticsBundle\Types\DateType',
+        'hash'      => 'Cygnus\OlyticsBundle\Types\MD5Type',
+        'MongoId'   => 'Cygnus\OlyticsBundle\Types\MongoIdType',
     );
 
     /**

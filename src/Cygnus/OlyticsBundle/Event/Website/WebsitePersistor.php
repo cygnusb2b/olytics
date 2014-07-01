@@ -152,7 +152,7 @@ class WebsitePersistor extends Persistor
                 $eventCountKey  => 1,
             ),
             '$setOnInsert'  => array(
-                'createdAt'     => new MongoDate(),
+                'createdAt'     => $sessionCreated,
                 'sessionId'     => $sessionId,
                 'visitorId'     => new MongoBinData($session->getVisitorId(), MongoBinData::UUID),
                 'customerId'    => $session->getCustomerId(),

@@ -158,6 +158,7 @@ class WebsitePersistor extends Persistor
                 'customerId'    => $session->getCustomerId(),
                 'ip'            => $session->getIp(),
                 'ua'            => $session->getUa(),
+                'env'           => $session->getEnv(),
             ),
         );
 

@@ -305,7 +305,7 @@ if (typeof Olytics !== 'object') {
                 parameterArray = arguments[i];
                 f = parameterArray.shift();
 
-                console.log(f);
+                // console.log(f);
 
                 if (isString(f)) {
                     asyncTracker[f].apply(asyncTracker, parameterArray);

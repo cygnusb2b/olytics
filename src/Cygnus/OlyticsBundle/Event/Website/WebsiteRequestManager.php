@@ -17,12 +17,32 @@ use Cygnus\OlyticsBundle\Event\PersistorInterface;
 
 class WebsiteRequestManager extends RequestManager
 {
+    /**
+     * The Request Factory for creating EventRequests from a Request
+     *
+     * @var RequestFactoryInterface
+     */
     protected $requestFactory;
 
+    /**
+     * The database Persister for writing objects to the database
+     *
+     * @var PersistorInterface
+     */
     protected $persistor;
 
+    /**
+     * The EventRequest being processed
+     *
+     * @var EventRequest
+     */
     protected $eventRequest;
 
+    /**
+     * The Session being processed
+     *
+     * @var Session
+     */
     protected $session;
 
     protected $container;
@@ -33,47 +53,83 @@ class WebsiteRequestManager extends RequestManager
 
     protected $relatedEntities = array();
 
+    /**
+     * Constructor. Injects the request factory and the database persister
+     *
+     * @param  RequestFactoryInterface $requestFactory
+     * @param  PersistorInterface      $persistor
+     * @return void
+     */
     public function __construct(RequestFactoryInterface $requestFactory, PersistorInterface $persistor)
     {
         $this->requestFactory = $requestFactory;
         $this->persistor = $persistor;
     }
 
+    /**
+     * Manages the incoming event request
+     *
+     * @param  RequestInterface $eventRequest
+     * @return void
+     */
     public function manage(RequestInterface $eventRequest)
     {
         $this->eventRequest = $eventRequest;
         $this->manageEvent();
     }
 
+    /**
+     * Persists the website event (and it's related session and entities) to the database
+     *
+     * @return void
+     */
     public function persist() {
         if ($this->event instanceof WebsiteEvent && $this->event->isValid()) {
             $this->persistor->persist(
-                $this->event, 
+                $this->event,
                 $this->relatedEntities,
-                $this->eventRequest->getVertical(), 
                 $this->eventRequest->getProduct(),
                 $this->eventRequest->appendCustomer
             );
         }
     }
 
+    /**
+     * Adds a related entity for this request
+     *
+     * @param  Entity $entity
+     * @return void
+     */
     protected function addRelatedEntity(Entity $entity)
     {
         $this->relatedEntities[] = $entity;
     }
 
+    /**
+     * Manages the incoming event
+     * Will create/hydrate the session, the event, and the event's related entities
+     *
+     * @param  Entity $entity
+     * @return void
+     */
     protected function manageEvent()
     {
-
+        // Manage the incoming session
         $this->manageSession();
 
+        // Get the event data from the incoming request
         $eventData = $this->eventRequest->getEvent();
 
+        // Get the entity data from the event
         $entityData = $eventData->get('entity');
 
-        if (!is_array($entityData)) $entityData = array();
+        if (!is_array($entityData)) $entityData = [];
+
+        // Hydrate the event entity
         $this->eventEntity = $this->hydrateEntity($entityData);
 
+
+        // Create the event object
         $this->event = new WebsiteEvent();
         $this->event->setAction($eventData->get('action'));
         $this->event->setEntity($this->eventEntity);
@@ -83,6 +139,7 @@ class WebsiteRequestManager extends RequestManager
             $this->event->setData($eventData->get('data'));
         }
 
+        // Set any related entities to the event
         $relatedEntityData = $eventData->get('relatedEntities');
         if (is_array($relatedEntityData) && !empty($relatedEntityData)) {
             foreach ($relatedEntityData as $relatedEntity) {
@@ -90,12 +147,18 @@ class WebsiteRequestManager extends RequestManager
                 if ($relEntityObj->isValid()) {
                     $this->event->addRelatedEntity($relEntityObj);
                 }
-                
+
             }
         }
+        // Set the session to the event
         $this->event->setSession($this->session);
     }
 
+    /**
+     * Manages/hydrates the incoming session from the event request
+     *
+     * @return void
+     */
     protected function manageSession()
     {
         $this->session = new WebsiteSession();
@@ -112,6 +175,12 @@ class WebsiteRequestManager extends RequestManager
         }
     }
 
+    /**
+     * Hydrates an Entity object from an array of entity data
+     *
+     * @param  array  $entityData
+     * @return Entity
+     */
     protected function hydrateEntity(array $entityData)
     {
         $entity = new Entity();
@@ -140,6 +209,12 @@ class WebsiteRequestManager extends RequestManager
         return $entity;
     }
 
+    /**
+     * Hydrates a RelatedEntity object from an array of entity data
+     *
+     * @param  array  $relatedEntityData
+     * @return RelatedEntity
+     */
     protected function hydrateRelatedEntity(array $relatedEntityData)
     {
         $relatedEntity = new RelatedEntity();
@@ -152,6 +227,12 @@ class WebsiteRequestManager extends RequestManager
         return $relatedEntity;
     }
 
+    /**
+     * Appends host, path, and query string data from a URL to a page Entity
+     *
+     * @param  Entity  &$page
+     * @return void
+     */
     protected function appendPageInfo(Entity &$page)
     {
         $keyValues = $page->getKeyValues();
@@ -172,12 +253,11 @@ class WebsiteRequestManager extends RequestManager
      *
      * @param  Symfony\Component\HttpFoundation\Request $request
      * @param  string $vertical The vertical
-     * @param  string $product  The product
      * @return void
      */
-    public function createAndManage(KernalRequest $request, $vertical, $product)
+    public function createAndManage(KernalRequest $request, $product)
     {
-        $eventRequest = $this->createRequestFromFactory($request, $vertical, $product);
+        $eventRequest = $this->createRequestFromFactory($request, $product);
         $this->manage($eventRequest);
     }
 
@@ -186,11 +266,10 @@ class WebsiteRequestManager extends RequestManager
      *
      * @param  Symfony\Component\HttpFoundation\Request $request
      * @param  string $vertical The vertical
-     * @param  string $product  The product
      * @return void
      */
-    public function createRequestFromFactory(KernalRequest $request, $vertical, $product)
+    public function createRequestFromFactory(KernalRequest $request, $product)
     {
-        return $this->requestFactory->createFromRequest($request, $vertical, $product);
+        return $this->requestFactory->createFromRequest($request, $product);
     }
 }

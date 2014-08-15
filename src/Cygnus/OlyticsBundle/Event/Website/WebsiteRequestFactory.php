@@ -12,17 +12,16 @@ class WebsiteRequestFactory extends RequestFactory
      * Creates a new Event\Websites\WebsiteRequest from a ParameterBag of request data
      *
      * @param  ParameterBag $requestData The event request data
-     * @param  string       $vertical    The vertical
      * @param  string       $product     The product
      * @return Cygnus\OlyticsBundle\Event\Website\WebsiteRequest
      */
-    public function create(ParameterBag $requestData, $vertical, $product)
+    public function create(ParameterBag $requestData, $product)
     {
         foreach (['session', 'event'] as $key) {
             $$key = $this->asArray($requestData->get($key));
         }
         $appendCustomer = ($requestData->get('appendCustomer') === true) ? true : false;
-        return new WebsiteRequest($session, $event, $vertical, $product, $appendCustomer);
+        return new WebsiteRequest($session, $event, $product, $appendCustomer);
     }
 
     /**

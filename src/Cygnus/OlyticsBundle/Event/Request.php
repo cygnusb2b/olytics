@@ -13,14 +13,6 @@ class Request implements RequestInterface
     protected $event;
 
     /**
-     * The vertical this request belongs to
-     * This is used for determining entity persistence
-     *
-     * @var string
-     */
-    protected $vertical;
-
-    /**
      * The product this request belongs to
      * This is used for determining event persistence
      *
@@ -48,16 +40,6 @@ class Request implements RequestInterface
     {
         $this->event = new ParameterBag($eventData);
         return $this;
-    }
-
-    /**
-     * Gets the vertical
-     *
-     * @return string
-     */
-    public function getVertical()
-    {
-        return $this->vertical;
     }
 
     /**

@@ -12,14 +12,31 @@ use \MongoDate;
 
 class WebsitePersistor extends Persistor
 {
+    /**
+     * The Account key
+     *
+     * @var string
+     */
+    protected $account = 'cygnus';
 
-    protected $vertical;
-
+    /**
+     * The Product key
+     *
+     * @var string
+     */
     protected $product;
 
-    public function persist(EventInterface $event, array $relatedEntities, $vertical, $product, $appendCustomer = false) {
+    /**
+     * Persists an event, it's session, and it's related entities to the database
+     *
+     * @param  EventInterface   $event
+     * @param  array            $relatedEntities
+     * @param  string           $product
+     * @param  boolean          $appendCustomer
+     * @return void
+     */
+    public function persist(EventInterface $event, array $relatedEntities, $product, $appendCustomer = false) {
         $this->product = $product;
-        $this->vertical = $vertical;
 
         $this->persistEntities($event, $relatedEntities);
         $this->persistSession($event);
@@ -30,31 +47,49 @@ class WebsitePersistor extends Persistor
         }
     }
 
+    /**
+     * Persists metadata entities from an event to the database
+     *
+     * @param  WebsiteEvent   $event
+     * @param  array          $relatedEntities
+     * @return void
+     */
     protected function persistEntities(WebsiteEvent $event, array $relatedEntities)
     {
+        // Persist the primary event entity
         $this->persistEntity($event->getEntity());
 
         foreach ($event->getRelatedEntities() as $relatedEntity) {
+            // Persist the additional related event entities
             $this->persistEntity($relatedEntity);
         }
 
         foreach ($relatedEntities as $relatedEntity) {
-
             $this->persistEntity($relatedEntity);
         }
     }
 
+    /**
+     * Creates a Builder instance for writing objects to the database
+     *
+     * @param  string   $dbName
+     * @param  string   $collectionName
+     * @return Builder
+     */
     protected function createQueryBuilder($dbName, $collectionName)
     {
         $collection = $this->connection->selectCollection($dbName, $collectionName);
         return new Builder($collection);
     }
 
+    /**
+     * Gets the Event to the database
+     *
+     * @param  WebsiteEvent   $event
+     * @return void
+     */
     protected function persistEvent(WebsiteEvent $event)
     {
-        $dbName = 'olytics_cygnus_' . $this->vertical . '_' . $this->product; 
-        $collectionName = 'event.' . $event->getEntity()->getType();
-
         $sessionId = new MongoBinData($event->getSession()->getId(), MongoBinData::UUID);
 
         // Persist the related entities
@@ -79,7 +114,7 @@ class WebsitePersistor extends Persistor
                     'clientId'  => $entity->getClientId(),
                 );
             }
-            
+
         }
 
         $upsertObj = array(
@@ -94,7 +129,7 @@ class WebsitePersistor extends Persistor
             ),
         );
 
-        $queryBuilder = $this->createQueryBuilder($dbName, $collectionName);
+        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
 
         $queryBuilder
             ->update()
@@ -102,12 +137,18 @@ class WebsitePersistor extends Persistor
             ->field('event')->equals($upsertEvent)
             ->setNewObj($upsertObj)
             ->getQuery()
-            ->execute();
+            ->execute()
+        ;
     }
 
+    /**
+     * Appends perviously set sessions with a customerId
+     *
+     * @param  WebsiteEvent   $event
+     * @return void
+     */
     protected function appendCustomer(WebsiteEvent $event)
     {
-        $dbName = 'olytics_cygnus_' . $this->vertical . '_' . $this->product; 
         $session = $event->getSession();
 
         $visitorId = new MongoBinData($session->getVisitorId(), MongoBinData::UUID);
@@ -118,7 +159,7 @@ class WebsitePersistor extends Persistor
             ),
         );
 
-        $queryBuilder = $this->createQueryBuilder($dbName, 'session');
+        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), 'session');
 
         $queryBuilder
             ->update()
@@ -126,12 +167,18 @@ class WebsitePersistor extends Persistor
             ->field('visitorId')->equals($visitorId)
             ->setNewObj($upsertObj)
             ->getQuery()
-            ->execute();
+            ->execute()
+        ;
     }
 
+    /**
+     * Persists the Session to the database
+     *
+     * @param  WebsiteEvent   $event
+     * @return void
+     */
     protected function persistSession(WebsiteEvent $event)
     {
-        $dbName = 'olytics_cygnus_' . $this->vertical . '_' . $this->product; 
         $session = $event->getSession();
 
         $sessionId = new MongoBinData($session->getId(), MongoBinData::UUID);
@@ -162,7 +209,7 @@ class WebsitePersistor extends Persistor
             ),
         );
 
-        $queryBuilder = $this->createQueryBuilder($dbName, 'session');
+        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), 'session');
 
         $queryBuilder
             ->update()
@@ -170,15 +217,18 @@ class WebsitePersistor extends Persistor
             ->field('sessionId')->equals($sessionId)
             ->setNewObj($upsertObj)
             ->getQuery()
-            ->execute();
+            ->execute()
+        ;
     }
 
+    /**
+     * Persists an Entity to the database
+     *
+     * @param  Entity   $entity
+     * @return void
+     */
     protected function persistEntity(Entity $entity)
     {
-
-        $dbName = 'olytics_cygnus_' . $this->vertical;
-        $collectionName = 'entity.' . $entity->getType();
-
         // @todo Create these as annotations on the classes themselves
         $upsertObj = array(
             '$set'  => array(
@@ -216,7 +266,7 @@ class WebsitePersistor extends Persistor
             }
         }
 
-        $queryBuilder = $this->createQueryBuilder($dbName, $collectionName);
+        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getEntityCollection($entity));
 
         $queryBuilder
             ->update()
@@ -224,8 +274,39 @@ class WebsitePersistor extends Persistor
             ->field('clientId')->equals($entity->getClientId())
             ->setNewObj($upsertObj)
             ->getQuery()
-            ->execute();
+            ->execute()
+        ;
+    }
 
+    /**
+     * Gets the Entity collection name
+     *
+     * @param  Entity   $entity
+     * @return string
+     */
+    protected function getEntityCollection(Entity $entity)
+    {
+        return sprintf('entity.%s', $entity->getType());
+    }
 
+    /**
+     * Gets the Event collection name
+     *
+     * @param  Entity   $entity
+     * @return string
+     */
+    protected function getEventCollection(Entity $entity)
+    {
+        return sprintf('event.%s', $entity->getType());
+    }
+
+    /**
+     * Gets the Olytics database name
+     *
+     * @return string
+     */
+    protected function getDatabaseName()
+    {
+        return sprintf('olytics_%s_%s', $this->account, $this->product);
     }
 }

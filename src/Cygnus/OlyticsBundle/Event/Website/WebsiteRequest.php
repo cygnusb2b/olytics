@@ -14,7 +14,7 @@ class WebsiteRequest extends Request
     protected $session;
 
     /**
-     * Flags whether the customer ID should be appending to previous sessions
+     * Flags whether the customerID should be appended to previous sessions
      *
      * @var bool
      */
@@ -29,9 +29,8 @@ class WebsiteRequest extends Request
      * @param  string $product  The product
      * @return void
      */
-    public function __construct(array $session, array $event, $vertical, $product, $appendCustomer = false)
+    public function __construct(array $session, array $event, $product, $appendCustomer = false)
     {
-        $this->vertical = $vertical;
         $this->product  = $product;
         $this->appendCustomer = $appendCustomer;
 

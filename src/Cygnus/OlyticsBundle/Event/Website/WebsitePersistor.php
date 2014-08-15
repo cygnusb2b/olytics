@@ -10,6 +10,7 @@ use Doctrine\MongoDB\Query\Builder;
 use \MongoBinData;
 use \MongoDate;
 use \RuntimeException;
+use \DateTime;
 
 class WebsitePersistor extends Persistor
 {
@@ -27,6 +28,8 @@ class WebsitePersistor extends Persistor
      */
     protected $product;
 
+    protected $time;
+
     /**
      * Persists an event, it's session, and it's related entities to the database
      *
@@ -41,6 +44,8 @@ class WebsitePersistor extends Persistor
 
         $this->account = strtolower($account);
         $this->product = strtolower($product);
+
+        $this->time = new DateTime();
 
         // Ensure account and product exists
         $this->validateProduct();
@@ -108,6 +113,8 @@ class WebsitePersistor extends Persistor
      */
     protected function persistEvent(WebsiteEvent $event)
     {
+        $this->getIndexManager()->createIndexes('event', $this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
+
         $sessionId = new MongoBinData($event->getSession()->getId(), MongoBinData::UUID);
 
         // Persist the related entities
@@ -177,7 +184,7 @@ class WebsitePersistor extends Persistor
             ),
         );
 
-        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), 'session');
+        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getSessionCollection());
 
         $queryBuilder
             ->update()
@@ -197,6 +204,8 @@ class WebsitePersistor extends Persistor
      */
     protected function persistSession(WebsiteEvent $event)
     {
+        $this->getIndexManager()->createIndexes('session', $this->getDatabaseName(), $this->getSessionCollection());
+
         $session = $event->getSession();
 
         $sessionId = new MongoBinData($session->getId(), MongoBinData::UUID);
@@ -227,7 +236,7 @@ class WebsitePersistor extends Persistor
             ),
         );
 
-        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), 'session');
+        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getSessionCollection());
 
         $queryBuilder
             ->update()
@@ -247,6 +256,8 @@ class WebsitePersistor extends Persistor
      */
     protected function persistEntity(Entity $entity)
     {
+        $this->getIndexManager()->createIndexes('entity', $this->getDatabaseName(), $this->getEntityCollection($entity));
+
         // @todo Create these as annotations on the classes themselves
         $upsertObj = array(
             '$set'  => array(
@@ -315,7 +326,28 @@ class WebsitePersistor extends Persistor
      */
     protected function getEventCollection(Entity $entity)
     {
-        return sprintf('event.%s', $entity->getType());
+        return sprintf('event.%s.%s', $entity->getType(), $this->getQuarterSuffix());
+    }
+
+    /**
+     * Gets the Event collection name
+     *
+     * @param  Entity   $entity
+     * @return string
+     */
+    protected function getSessionCollection()
+    {
+        return sprintf('session.%s', $this->getQuarterSuffix());
+    }
+
+    protected function getQuarterSuffix()
+    {
+        return sprintf('%s_Q%s', $this->time->format('Y'), ceil($this->time->format('n') / 3));
+    }
+
+    protected function getEntityIndexes()
+    {
+
     }
 
     /**

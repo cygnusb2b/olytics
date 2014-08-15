@@ -42,6 +42,13 @@ assetic:
         #yui_css:
         #    jar: "%kernel.root_dir%/Resources/java/yuicompressor-2.4.7.jar"
 
+snc_redis:
+    clients:
+        cache:
+            type: phpredis
+            alias: cache
+            dsn: redis://cachevm01.cygnuspub.com/1
+
 cygnus_olytics:
     connection:
         server: mongodb://db9.cygnuspub.com:27017 #mongodb://204.180.130.164:27017

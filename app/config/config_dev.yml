@@ -11,6 +11,13 @@ web_profiler:
     toolbar: true
     intercept_redirects: false
 
+snc_redis:
+    clients:
+        cache:
+            type: phpredis
+            alias: cache
+            dsn: redis://devcache01.cygnuspub.com/2
+
 cygnus_olytics:
     connection:
         server: mongodb://devdb01.cygnuspub.com:27017
@@ -23,7 +30,7 @@ monolog:
             type:           gelf
             publisher:
                 hostname:   log01.cygnuspub.com
-            level:          info 
+            level:          info
             # type:   stream
             # path:   "%kernel.logs_dir%/%kernel.environment%.log"
             # level:  debug

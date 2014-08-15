@@ -19,6 +19,7 @@ class AppKernel extends Kernel
             new Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle(),
             new Cygnus\OlyticsBundle\CygnusOlyticsBundle(),
             new Cygnus\ApiSuiteBundle\CygnusApiSuiteBundle(),
+            new Snc\RedisBundle\SncRedisBundle(),
         );
 
         if (in_array($this->getEnvironment(), array('dev', 'test'))) {

@@ -18,10 +18,13 @@ services:
         class: %cygnus_olytics.data_formatter.generic.class%
     cygnus_olytics.events.website.persistor:
         class: %cygnus_olytics.events.website.persistor.class%
-        arguments: [@doctrine_mongodb.odm.olytics_connection, %cygnus_olytics.accounts%]
+        arguments: [@doctrine_mongodb.odm.olytics_connection, @cygnus_olytics.index_manager, %cygnus_olytics.accounts%]
     cygnus_olytics.events.website.request_factory:
         class: %cygnus_olytics.events.website.request_factory.class%
         arguments: [@cygnus_olytics.data_formatter.generic]
     cygnus_olytics.events.website.request_manager:
         class: %cygnus_olytics.events.website.request_manager.class%
         arguments: [@cygnus_olytics.events.website.request_factory, @cygnus_olytics.events.website.persistor]
+    cygnus_olytics.index_manager:
+        class: Cygnus\OlyticsBundle\Index\IndexManager
+        arguments: [@doctrine_mongodb.odm.olytics_connection, @snc_redis.cache]

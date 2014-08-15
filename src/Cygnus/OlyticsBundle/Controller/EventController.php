@@ -8,15 +8,18 @@ use Symfony\Component\HttpFoundation\Request;
 
 class EventController extends Controller
 {
-    public function legacyAction($vertical, $product)
-    {
-        $acbmProductMap = ['fcp', 'sdce', 'fl', 'ooh'];
-        $account = (in_array($product, $acbmProductMap)) ? 'acbm' : 'cygnus';
-        return $this->indexAction($account, $product);
-    }
 
     public function indexAction($account, $product)
     {
+        // This is legacy handling until the websites are switched
+        // REMOVE once complete
+        $accounts = ['acbm', 'cygnus'];
+        if (!in_array($account, $accounts)) {
+            // Account is a legacy Vertical key
+            $acbmProductMap = ['fcp', 'sdce', 'fl', 'ooh'];
+            $account = (in_array($product, $acbmProductMap)) ? 'acbm' : 'cygnus';
+        }
+
         // Get the incoming request
         $request = $this->get('request');
 

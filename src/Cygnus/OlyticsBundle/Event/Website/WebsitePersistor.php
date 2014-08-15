@@ -9,6 +9,7 @@ use Cygnus\OlyticsBundle\Model\Event\WebsiteEvent;
 use Doctrine\MongoDB\Query\Builder;
 use \MongoBinData;
 use \MongoDate;
+use \RuntimeException;
 
 class WebsitePersistor extends Persistor
 {
@@ -17,7 +18,7 @@ class WebsitePersistor extends Persistor
      *
      * @var string
      */
-    protected $account = 'cygnus';
+    protected $account;
 
     /**
      * The Product key
@@ -31,12 +32,18 @@ class WebsitePersistor extends Persistor
      *
      * @param  EventInterface   $event
      * @param  array            $relatedEntities
+     * @param  string           $account
      * @param  string           $product
      * @param  boolean          $appendCustomer
      * @return void
      */
-    public function persist(EventInterface $event, array $relatedEntities, $product, $appendCustomer = false) {
-        $this->product = $product;
+    public function persist(EventInterface $event, array $relatedEntities, $account, $product, $appendCustomer = false) {
+
+        $this->account = strtolower($account);
+        $this->product = strtolower($product);
+
+        // Ensure account and product exists
+        $this->validateProduct();
 
         $this->persistEntities($event, $relatedEntities);
         $this->persistSession($event);
@@ -44,6 +51,17 @@ class WebsitePersistor extends Persistor
 
         if ($appendCustomer === true) {
             $this->appendCustomer($event);
+        }
+    }
+
+    protected function validateProduct()
+    {
+        if (!isset($this->accounts[$this->account])) {
+            throw new RuntimeException(sprintf('The account key "%s" is invalid.', $this->account));
+        }
+        $products = $this->accounts[$this->account]['products'];
+        if (!in_array($this->product, $products)) {
+            throw new RuntimeException(sprintf('The product key "%s" is invalid for account "%s"', $this->product, $this->account));
         }
     }
 
@@ -307,6 +325,6 @@ class WebsitePersistor extends Persistor
      */
     protected function getDatabaseName()
     {
-        return sprintf('olytics_%s_%s', $this->account, $this->product);
+        return sprintf('oly_%s_%s', $this->account, $this->product);
     }
 }

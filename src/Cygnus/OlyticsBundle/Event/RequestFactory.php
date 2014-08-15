@@ -33,11 +33,11 @@ abstract class RequestFactory implements RequestFactoryInterface
      * @param  string $product  The product
      * @return mixed The newly created EventRequst
      */
-    public function createFromRequest(KernalRequest $request, $product)
+    public function createFromRequest(KernalRequest $request, $account, $product)
     {
         $requestData = $this->getDataFromRequest($request);
         $requestData = $this->format($requestData);
-        return $this->create($requestData, $product);
+        return $this->create($requestData, $account, $product);
     }
 
     /**
@@ -47,10 +47,10 @@ abstract class RequestFactory implements RequestFactoryInterface
      * @param  string $product  The product
      * @return mixed The newly created EventRequst
      */
-    public function createFromArray(array $data, $product)
+    public function createFromArray(array $data, $account, $product)
     {
         $requestData = $this->format($data);
-        return $this->create($requestData, $product);
+        return $this->create($requestData, $account, $product);
     }
 
     /**
@@ -93,7 +93,7 @@ abstract class RequestFactory implements RequestFactoryInterface
      * @param  string $vertical The vertical
      * @return mixed The newly created EventRequst
      */
-    abstract public function create(ParameterBag $requestData, $product);
+    abstract public function create(ParameterBag $requestData, $account, $product);
 
     /**
      * Returns a value as an empty array if it isn't an array

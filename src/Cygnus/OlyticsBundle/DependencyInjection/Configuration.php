@@ -37,6 +37,25 @@ class Configuration implements ConfigurationInterface
                     ->isRequired()
                     ->cannotBeEmpty()
                 ->end()
+                ->arrayNode('accounts')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->useAttributeAsKey('account')
+                    ->prototype('array')
+                        ->children()
+                            ->arrayNode('products')
+                                ->prototype('scalar')->end()
+                            ->end()
+                        ->end()
+
+                    ->end()
+                    // ->prototype('array')
+                    //     ->children()
+                    //         ->arrayNode
+                    //         ->prototype('scalar')->end()
+                    //     ->end()
+                    // ->end()
+                ->end()
             ->end();
 
         return $treeBuilder;

@@ -47,6 +47,11 @@ cygnus_olytics:
         server: mongodb://db9.cygnuspub.com:27017 #mongodb://204.180.130.164:27017
         options: {}
     host: olytics.cygnus.com
+    accounts:
+        acbm:
+            products: [fcp, ooh, sdce, fl]
+        cygnus:
+            products: [autm, cavc, csn, emsr, fhc, frpc, gip, ll, mass, mprc, ofcr, siw, vspc]
 
 doctrine_mongodb:
     default_connection: default

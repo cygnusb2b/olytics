@@ -59,6 +59,7 @@ class CygnusOlyticsExtension extends Extension implements PrependExtensionInterf
         $config = $this->processConfiguration($configuration, $configs);
 
         $container->setParameter($this->getAlias() . '.host', $config['host']);
+        $container->setParameter($this->getAlias() . '.accounts', $config['accounts']);
 
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yml');

@@ -25,12 +25,14 @@ class WebsiteRequest extends Request
      *
      * @param  array  $session  The session data
      * @param  array  $event    The event data
-     * @param  string $vertical The vertical
+     * @param  string $account  The account
      * @param  string $product  The product
+     * @param  bool   $appendCustomer
      * @return void
      */
-    public function __construct(array $session, array $event, $product, $appendCustomer = false)
+    public function __construct(array $session, array $event, $account, $product, $appendCustomer = false)
     {
+        $this->account = $account;
         $this->product  = $product;
         $this->appendCustomer = $appendCustomer;
 

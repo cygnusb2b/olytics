@@ -10,10 +10,12 @@ class EventController extends Controller
 {
     public function legacyAction($vertical, $product)
     {
-        return $this->indexAction($product);
+        $acbmProductMap = ['fcp', 'sdce', 'fl', 'ooh'];
+        $account = (in_array($product, $acbmProductMap)) ? 'acbm' : 'cygnus';
+        return $this->indexAction($account, $product);
     }
 
-    public function indexAction($product)
+    public function indexAction($account, $product)
     {
         // Get the incoming request
         $request = $this->get('request');
@@ -38,7 +40,7 @@ class EventController extends Controller
         $requestManager = $this->get('cygnus_olytics.events.website.request_manager');
         try {
             // Create and manage event from the HTTP request
-            $requestManager->createAndManage($request, $product);
+            $requestManager->createAndManage($request, $account, $product);
             // Persist to the DB
             $requestManager->persist();
 

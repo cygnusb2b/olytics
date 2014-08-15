@@ -88,6 +88,7 @@ class WebsiteRequestManager extends RequestManager
             $this->persistor->persist(
                 $this->event,
                 $this->relatedEntities,
+                $this->eventRequest->getAccount(),
                 $this->eventRequest->getProduct(),
                 $this->eventRequest->appendCustomer
             );
@@ -255,9 +256,9 @@ class WebsiteRequestManager extends RequestManager
      * @param  string $vertical The vertical
      * @return void
      */
-    public function createAndManage(KernalRequest $request, $product)
+    public function createAndManage(KernalRequest $request, $account, $product)
     {
-        $eventRequest = $this->createRequestFromFactory($request, $product);
+        $eventRequest = $this->createRequestFromFactory($request, $account, $product);
         $this->manage($eventRequest);
     }
 
@@ -268,8 +269,8 @@ class WebsiteRequestManager extends RequestManager
      * @param  string $vertical The vertical
      * @return void
      */
-    public function createRequestFromFactory(KernalRequest $request, $product)
+    public function createRequestFromFactory(KernalRequest $request, $account, $product)
     {
-        return $this->requestFactory->createFromRequest($request, $product);
+        return $this->requestFactory->createFromRequest($request, $account, $product);
     }
 }

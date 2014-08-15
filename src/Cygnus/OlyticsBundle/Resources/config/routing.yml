@@ -1,5 +1,5 @@
 cygnus_olytics_event_tracker:
-    pattern:  /events/{product}
+    pattern:  /event/{account}/{product}
     defaults: { _controller: CygnusOlyticsBundle:Event:index }
 
 cygnus_olytics_legacy_event_tracker:

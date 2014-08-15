@@ -13,6 +13,14 @@ class Request implements RequestInterface
     protected $event;
 
     /**
+     * The account this request belongs to
+     * This is used for determining event persistence
+     *
+     * @var string
+     */
+    protected $account;
+
+    /**
      * The product this request belongs to
      * This is used for determining event persistence
      *
@@ -40,6 +48,16 @@ class Request implements RequestInterface
     {
         $this->event = new ParameterBag($eventData);
         return $this;
+    }
+
+    /**
+     * Gets the account
+     *
+     * @return string
+     */
+    public function getAccount()
+    {
+        return $this->account;
     }
 
     /**

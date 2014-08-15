@@ -8,6 +8,11 @@ use Symfony\Component\HttpFoundation\Request;
 
 class EventController extends Controller
 {
+    public function legacyAction($vertical, $product)
+    {
+        return $this->indexAction($product);
+    }
+
     public function indexAction($product)
     {
         // Get the incoming request

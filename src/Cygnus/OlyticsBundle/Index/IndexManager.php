@@ -78,10 +78,9 @@ class IndexManager
 
     public function setEventIndexes()
     {
-        $this->addIndex('event', ['event' => 1], true);
-        $this->addIndex('event', ['event.sessionId' => 1]);
-        $this->addIndex('event', ['event.clientId' => 1, 'event.action' => 1]);
-        $this->addIndex('event', ['event.occurredOn' => 1]);
+        $this->addIndex('event', ['sessionId' => 1]);
+        $this->addIndex('event', ['clientId' => 1, 'action' => 1]);
+        $this->addIndex('event', ['createdAt' => 1]);
     }
 
     public function setEntityIndexes()

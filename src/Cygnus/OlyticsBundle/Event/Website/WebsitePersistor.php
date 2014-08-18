@@ -119,22 +119,23 @@ class WebsitePersistor extends Persistor
 
         // Persist the related entities
 
-        $upsertEvent = array(
+        $insertObj = [
             'action'    => $event->getAction(),
             'clientId'  => $event->getEntity()->getClientId(),
             'sessionId' => $sessionId,
-        );
+            'createdAt' => new MongoDate($event->getCreatedAt()->getTimestamp()),
+        ];
 
         $eventData = $event->getData();
 
         if (!empty($eventData)) {
-            $upsertEvent['data'] = $eventData;
+            $insertObj['data'] = $eventData;
         }
 
         $relatedEntities = $event->getRelatedEntities();
         if (!empty($relatedEntities)) {
             foreach ($relatedEntities as $entity) {
-                $upsertEvent['relatedEntities'][] = array(
+                $insertObj['relatedEntities'][] = array(
                     'type'      => $entity->getType(),
                     'clientId'  => $entity->getClientId(),
                 );
@@ -142,25 +143,11 @@ class WebsitePersistor extends Persistor
 
         }
 
-        $upsertObj = array(
-            '$push'  => array(
-                'occurredOn' => new MongoDate($event->getCreatedAt()->getTimestamp()),
-            ),
-            '$inc'  => array(
-                'count'  => 1,
-            ),
-            '$setOnInsert'  => array(
-                'event' => $upsertEvent,
-            ),
-        );
-
         $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
 
         $queryBuilder
-            ->update()
-            ->upsert(true)
-            ->field('event')->equals($upsertEvent)
-            ->setNewObj($upsertObj)
+            ->insert()
+            ->setNewObj($insertObj)
             ->getQuery()
             ->execute()
         ;

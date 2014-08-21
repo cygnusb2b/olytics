@@ -7,6 +7,7 @@ use Cygnus\OlyticsBundle\Model\Metadata\Entity;
 use Cygnus\OlyticsBundle\Model\Session\WebsiteSession;
 use Cygnus\OlyticsBundle\Model\Event\WebsiteEvent;
 use Doctrine\MongoDB\Query\Builder;
+use Doctrine\Common\Util\Inflector;
 use \MongoBinData;
 use \MongoDate;
 use \RuntimeException;
@@ -84,7 +85,8 @@ class WebsitePersistor extends Persistor
 
         foreach ($event->getRelatedEntities() as $relatedEntity) {
             // Persist the additional related event entities
-            $this->persistEntity($relatedEntity);
+            // Disabling in preference of storing the data directly on the event
+            // $this->persistEntity($relatedEntity);
         }
 
         foreach ($relatedEntities as $relatedEntity) {
@@ -135,12 +137,13 @@ class WebsitePersistor extends Persistor
         $relatedEntities = $event->getRelatedEntities();
         if (!empty($relatedEntities)) {
             foreach ($relatedEntities as $entity) {
-                $insertObj['relatedEntities'][] = array(
-                    'type'      => $entity->getType(),
-                    'clientId'  => $entity->getClientId(),
-                );
+                $keyValues = $entity->getKeyValues();
+                if (empty($keyValues)) {
+                    continue;
+                }
+                $type = Inflector::camelize($entity->getType());
+                $insertObj['relatedEntities'][$type] = $keyValues;
             }
-
         }
 
         $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getEventCollection($event->getEntity()));

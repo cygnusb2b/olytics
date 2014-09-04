@@ -17,10 +17,10 @@ monolog:
             type:           gelf
             publisher:
                 hostname:   log01.cygnuspub.com
-            level:          warning 
+            level:          warning
         nested:
             type:  stream
             path:  "%kernel.logs_dir%/%kernel.environment%.log"
-            level: debug
+            level: warning
         console:
             type:  console

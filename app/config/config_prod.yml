@@ -18,17 +18,3 @@ cygnus_olytics:
             replicaSet: analytics
             journal: false
             w: 1
-
-monolog:
-    handlers:
-        main:
-            type:           gelf
-            publisher:
-                hostname:   log01.cygnuspub.com
-            level:          warning
-        nested:
-            type:  stream
-            path:  "%kernel.logs_dir%/%kernel.environment%.log"
-            level: warning
-        console:
-            type:  console

@@ -47,18 +47,18 @@ snc_redis:
         cache:
             type: phpredis
             alias: cache
-            dsn: redis://cachevm01.cygnuspub.com/1
+            dsn: redis://10.0.4.101/1
 
 cygnus_olytics:
-    connection:
-        server: mongodb://db9.cygnuspub.com:27017 #mongodb://204.180.130.164:27017
-        options: {}
     host: olytics.cygnus.com
     accounts:
         acbm:
             products: [fcp, ooh, sdce, fl]
         cygnus:
             products: [vmw, cavc, csn, emsr, fhc, frpc, gip, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
+
+cygnus_api_suite:
+    cache_client: snc_redis.cache
 
 doctrine_mongodb:
     default_connection: default

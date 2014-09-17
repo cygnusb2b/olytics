@@ -13,7 +13,8 @@ abstract class Persistor implements PersistorInterface
 
     protected $indexManager;
 
-    public function __construct(Connection $connection, IndexManager $indexManager, array $accounts) {
+    public function __construct(Connection $connection, IndexManager $indexManager, array $accounts)
+    {
         $this->connection = $connection;
         $this->indexManager = $indexManager;
         $this->accounts = $accounts;

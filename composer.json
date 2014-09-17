@@ -22,7 +22,7 @@
         "doctrine/mongodb-odm": "1.0.*dev",
         "doctrine/mongodb-odm-bundle": "3.0.*dev",
         "mlehner/gelf-php": "*",
-        "cygnus/api-suite-bundle": "dev-master",
+        "cygnus/api-suite-bundle": "dev-accounts",
         "snc/redis-bundle": "dev-master"
     },
     "repositories": [

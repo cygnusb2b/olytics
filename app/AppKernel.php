@@ -5,6 +5,12 @@ use Symfony\Component\Config\Loader\LoaderInterface;
 
 class AppKernel extends Kernel
 {
+
+    public function getName()
+    {
+        return 'Olytics';
+    }
+
     public function registerBundles()
     {
         $bundles = array(

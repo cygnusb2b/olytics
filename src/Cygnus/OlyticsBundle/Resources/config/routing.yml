@@ -1,3 +1,7 @@
+cygnus_olytics_default:
+    pattern: /
+    defaults: { _controller: CygnusOlyticsBundle:Default:index }
+
 cygnus_olytics_event_tracker:
     pattern:  /events/{account}/{product}
     defaults: { _controller: CygnusOlyticsBundle:Event:index }
@@ -8,4 +12,4 @@ cygnus_olytics_library:
 
 cygnus_olytics_test_request:
     pattern:  /test
-    defaults: { _controller: CygnusOlyticsBundle:Default:index }
+    defaults: { _controller: CygnusOlyticsBundle:Test:index }

@@ -2,12 +2,12 @@
 namespace Cygnus\OlyticsBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Response;
 
 class DefaultController extends Controller
 {
     public function indexAction()
     {
-        $serviceHost = $this->container->getParameter('cygnus_olytics.host');
-        return $this->render('CygnusOlyticsBundle:Default:index.html.twig', array('serviceHost' => $serviceHost));
+        return Response::create('Pleased to meet you. My name is Oly.', 403);
     }
 }

@@ -12,7 +12,7 @@ imports:
 #        query_cache_driver: apc
 cygnus_olytics:
     connection:
-        server: 'mongodb://10.0.2.101:27017,10.2.102:27017,10.0.2.103:27017'
+        server: 'mongodb://10.0.2.101:27017,10.0.2.102:27017,10.0.2.103:27017'
         options:
             readPreference: nearest
             replicaSet: analytics

@@ -30,13 +30,27 @@ class IndexManager
         }
     }
 
+    protected function notifyNewRelic($message, $dbName, $collName, $response)
+    {
+        if (extension_loaded('newrelic')) {
+            newrelic_add_custom_parameter('dbName', $dbName);
+            newrelic_add_custom_parameter('collName', $collName);
+            newrelic_add_custom_parameter('response', serialize($response));
+            newrelic_notice_error($message);
+        }
+    }
+
     protected function doCreateIndexes($type, $dbName, $collName)
     {
         $collection = $this->connection->selectCollection($dbName, $collName);
 
         foreach ($this->getIndexesFor($type) as $index) {
-            $options = ($index->unique === true) ? ['unique' => true, 'background' => true] : ['background' => true];
-            $collection->ensureIndex($index->keys, $options);
+            $options = ($index->unique === true) ? ['unique' => true, 'background' => true, 'safe' => true] : ['background' => true, 'safe' => true];
+            $result = $collection->ensureIndex($index->keys, $options);
+            if (!$result || $result['ok'] != 1) {
+                $this->notifyNewRelic('Unable to create index', $dbName, $collName, $result);
+                return false;
+            }
         }
         $cacheKey = $this->getCacheKey($dbName, $collName);
         $this->cacheClient->set($cacheKey, true);

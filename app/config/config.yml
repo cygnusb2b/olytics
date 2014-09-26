@@ -47,7 +47,7 @@ snc_redis:
         cache:
             type: phpredis
             alias: cache
-            dsn: redis://10.0.4.101/1
+            dsn: redis://analytics.xgsurf.ng.0001.use1.cache.amazonaws.com/1
 
 cygnus_olytics:
     host: olytics.cygnus.com

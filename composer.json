@@ -28,7 +28,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "git@cygnus.git.beanstalkapp.com:/cygnus/api-suite-bundle.git"
+            "url": "git@github.com:cygnusb2b/ApiSuiteBundle.git"
         }
     ],
     "scripts": {

@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "93b65c30bb487933dda42f4eddfa3235",
+    "hash": "8bd28a18de2e9fd32262daa2afe495c3",
     "packages": [
         {
             "name": "cygnus/api-suite-bundle",
@@ -12,8 +12,14 @@
             "target-dir": "Cygnus/ApiSuiteBundle",
             "source": {
                 "type": "git",
-                "url": "git@cygnus.git.beanstalkapp.com:/cygnus/api-suite-bundle.git",
-                "reference": "e624a6db06f52ab87182f58a37d5709062640640"
+                "url": "git@github.com:cygnusb2b/ApiSuiteBundle.git",
+                "reference": "159b9149ed0c31fb7cfeeb91bd0ce3d111de2c2a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cygnusb2b/ApiSuiteBundle/zipball/159b9149ed0c31fb7cfeeb91bd0ce3d111de2c2a",
+                "reference": "159b9149ed0c31fb7cfeeb91bd0ce3d111de2c2a",
+                "shasum": ""
             },
             "require": {
                 "ext-curl": "*",
@@ -45,7 +51,11 @@
                 }
             ],
             "description": "API Suite Bundle for Symfony2 projects",
-            "time": "2014-09-10 13:26:46"
+            "support": {
+                "source": "https://github.com/cygnusb2b/ApiSuiteBundle/tree/accounts",
+                "issues": "https://github.com/cygnusb2b/ApiSuiteBundle/issues"
+            },
+            "time": "2014-09-19 15:54:18"
         },
         {
             "name": "doctrine/annotations",

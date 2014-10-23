@@ -45,6 +45,7 @@ class EventController extends Controller
         try {
             // Create and manage event from the HTTP request
             $requestManager->createAndManage($request, $account, $product);
+
             // Persist to the DB
             $requestManager->persist();
 

@@ -51,8 +51,8 @@ class WebsitePersistor extends Persistor
         // Ensure account and product exists
         $this->validateProduct();
 
-        $this->persistEntities($event, $relatedEntities);
-        $this->persistSession($event);
+        // $this->persistEntities($event, $relatedEntities);
+        // $this->persistSession($event);
         $this->persistEvent($event);
 
         if ($appendCustomer === true) {
@@ -115,18 +115,41 @@ class WebsitePersistor extends Persistor
      */
     protected function persistEvent(WebsiteEvent $event)
     {
-        $this->getIndexManager()->createIndexes('event', $this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
+        $this->getIndexManager()->createIndexes('event_ttl', $this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
 
-        $sessionId = new MongoBinData($event->getSession()->getId(), MongoBinData::UUID);
-
-        // Persist the related entities
 
         $insertObj = [
             'action'    => $event->getAction(),
             'clientId'  => $event->getEntity()->getClientId(),
-            'sessionId' => $sessionId,
             'createdAt' => new MongoDate($event->getCreatedAt()->getTimestamp()),
+            'entity'    => [
+                'keyValues'     => $event->getEntity()->getKeyValues(),
+            ],
+            'session'   => [
+                'id'            => new MongoBinData($event->getSession()->getId(), MongoBinData::UUID),
+                'customerId'    => $event->getSession()->getCustomerId(),
+                'visitorId'     => new MongoBinData($event->getSession()->getVisitorId(), MongoBinData::UUID),
+                'env'           => $event->getSession()->getEnv(),
+                'ip'            => $event->getSession()->getIp(),
+                'ua'            => $event->getSession()->getUa(),
+            ],
         ];
+
+        $relatedTo = $event->getEntity()->getRelatedTo();
+
+        // $addToSet ensures that previously set relatedTo arrays are not overwritten
+        // Drawback: relatedTo removals will not be reflected
+        if (!empty($relatedTo)) {
+            $insertObj['entity']['relatedTo'] = [];
+            foreach ($relatedTo as $relatedEntity) {
+                $insertObj['entity']['relatedTo'][] = [
+                    'type'      => $relatedEntity->getType(),
+                    'clientId'  => $relatedEntity->getClientId(),
+                    'relFields' => $relatedEntity->getRelFields(),
+                ];
+            }
+        }
+
 
         $eventData = $event->getData();
 
@@ -316,7 +339,7 @@ class WebsitePersistor extends Persistor
      */
     protected function getEventCollection(Entity $entity)
     {
-        return sprintf('event.%s.%s', $entity->getType(), $this->getQuarterSuffix());
+        return sprintf('event.%s', $entity->getType());
     }
 
     /**
@@ -347,6 +370,6 @@ class WebsitePersistor extends Persistor
      */
     protected function getDatabaseName()
     {
-        return sprintf('oly_%s_%s', $this->account, $this->product);
+        return sprintf('oly_ttl_%s_%s', $this->account, $this->product);
     }
 }

@@ -83,7 +83,9 @@ class WebsiteRequestManager extends RequestManager
      *
      * @return void
      */
-    public function persist() {
+    public function persist()
+    {
+
         if ($this->event instanceof WebsiteEvent && $this->event->isValid()) {
             $this->persistor->persist(
                 $this->event,

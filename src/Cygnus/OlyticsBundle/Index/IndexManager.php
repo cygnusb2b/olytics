@@ -18,9 +18,10 @@ class IndexManager
         $this->connection = $connection;
         $this->cacheClient = $cacheClient;
 
-        $this->setSessionIndexes();
-        $this->setEventIndexes();
-        $this->setEntityIndexes();
+        // $this->setSessionIndexes();
+        // $this->setEventIndexes();
+        // $this->setEntityIndexes();
+        $this->setEventTtlIndexes();
     }
 
     public function createIndexes($type, $dbName, $collName)
@@ -45,7 +46,16 @@ class IndexManager
         $collection = $this->connection->selectCollection($dbName, $collName);
 
         foreach ($this->getIndexesFor($type) as $index) {
-            $options = ($index->unique === true) ? ['unique' => true, 'background' => true, 'safe' => true] : ['background' => true, 'safe' => true];
+
+            $options = ['background' => true, 'safe' => true];
+            if ($index->unique) {
+                $options['unique'] = true;
+            }
+
+            if (0 < $expire = $index->expireAfterSeconds) {
+                $options['expireAfterSeconds'] = $expire;
+            }
+
             $result = $collection->ensureIndex($index->keys, $options);
             if (!$result || $result['ok'] != 1) {
                 $this->notifyNewRelic('Unable to create index', $dbName, $collName, $result);
@@ -83,6 +93,13 @@ class IndexManager
         return [];
     }
 
+    public function setEventTtlIndexes()
+    {
+        $this->addIndex('event_ttl', ['clientId' => 1, 'action' => 1]);
+        $this->addIndex('event_ttl', ['createdAt' => 1], false, 60*60*24*30);
+        $this->addIndex('event_ttl', ['session.id' => 1, 'session.customerId' => 1, 'session.visitorId' => 1]);
+    }
+
     public function setSessionIndexes()
     {
         $this->addIndex('session', ['sessionId' => 1], true);
@@ -102,11 +119,16 @@ class IndexManager
         $this->addIndex('entity', ['clientId' => 1], true);
     }
 
-    public function addIndex($collType, array $keys, $unique = false)
+    public function addIndex($collType, array $keys, $unique = false, $ttl = 0)
     {
         $collType = strtolower($collType);
 
         $data = ['keys' => $keys, 'unique' => $unique];
+
+        if ($ttl > 0) {
+            $data['expireAfterSeconds'] = $ttl;
+        }
+
         $index = new Index($data);
 
         $this->indexes[$collType][] = $index;

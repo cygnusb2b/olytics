@@ -6,9 +6,6 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations\Index;
 
 class IndexManager
 {
-
-    protected $indexes = [];
-
     protected $cacheClient;
 
     protected $connection;
@@ -17,17 +14,12 @@ class IndexManager
     {
         $this->connection = $connection;
         $this->cacheClient = $cacheClient;
-
-        // $this->setSessionIndexes();
-        // $this->setEventIndexes();
-        // $this->setEntityIndexes();
-        $this->setEventTtlIndexes();
     }
 
-    public function createIndexes($type, $dbName, $collName)
+    public function createIndexes(array $indexes, $dbName, $collName)
     {
         if (!$this->indexesExist($dbName, $collName)) {
-            $this->doCreateIndexes($type, $dbName, $collName);
+            $this->doCreateIndexes($indexes, $dbName, $collName);
         }
     }
 
@@ -41,13 +33,16 @@ class IndexManager
         }
     }
 
-    protected function doCreateIndexes($type, $dbName, $collName)
+    protected function doCreateIndexes(array $indexes, $dbName, $collName)
     {
         $collection = $this->connection->selectCollection($dbName, $collName);
+        foreach ($indexes as $index) {
 
-        foreach ($this->getIndexesFor($type) as $index) {
+            if (!$index instanceof Index) {
+                throw new \InvalidArgumentException('Each index must be an instance of Doctrine\ODM\MongoDB\Mapping\Annotations\Index');
+            }
 
-            $options = ['background' => true, 'safe' => true];
+            $options = ['background' => true, 'w' => 1];
             if ($index->unique) {
                 $options['unique'] = true;
             }
@@ -80,58 +75,34 @@ class IndexManager
         return sprintf('Olytics:IndexManager:%s:%s', $dbName, $collName);
     }
 
-    public function getIndexes()
+    public function indexFactoryMulti(array $indexes)
     {
-        return $this->indexes;
-    }
+        $objects = [];
+        foreach ($indexes as $index) {
+            if (!is_array($index) || !isset($index['keys']) || !is_array($index['keys'])) {
+                throw new \InvalidArgumentException('Each index must contain an array of keys.');
+            }
+            if (!isset($index['options'])) {
+                $index['options'] = [];
+            }
+            if (!is_array($index['options'])) {
+                throw new \InvalidArgumentException('Options must be passed as an array.');
+            }
 
-    public function getIndexesFor($type)
-    {
-        if (isset($this->indexes[$type])) {
-            return $this->indexes[$type];
+            $objects[] = $this->indexFactory($index['keys'], $index['options']);
         }
-        return [];
+        return $objects;
     }
 
-    public function setEventTtlIndexes()
+    public function indexFactory(array $keys, array $options)
     {
-        $this->addIndex('event_ttl', ['clientId' => 1, 'action' => 1]);
-        $this->addIndex('event_ttl', ['createdAt' => 1], false, 60*60*24*30);
-        $this->addIndex('event_ttl', ['session.id' => 1, 'session.customerId' => 1, 'session.visitorId' => 1]);
-    }
+        $data = [];
+        $data['keys'] = $keys;
 
-    public function setSessionIndexes()
-    {
-        $this->addIndex('session', ['sessionId' => 1], true);
-        $this->addIndex('session', ['visitorId' => 1]);
-        $this->addIndex('session', ['customerId' => 1]);
-    }
-
-    public function setEventIndexes()
-    {
-        $this->addIndex('event', ['sessionId' => 1]);
-        $this->addIndex('event', ['clientId' => 1, 'action' => 1]);
-        $this->addIndex('event', ['createdAt' => 1]);
-    }
-
-    public function setEntityIndexes()
-    {
-        $this->addIndex('entity', ['clientId' => 1], true);
-    }
-
-    public function addIndex($collType, array $keys, $unique = false, $ttl = 0)
-    {
-        $collType = strtolower($collType);
-
-        $data = ['keys' => $keys, 'unique' => $unique];
-
-        if ($ttl > 0) {
-            $data['expireAfterSeconds'] = $ttl;
+        foreach ($options as $key => $option) {
+            $data[$key] = $option;
         }
-
-        $index = new Index($data);
-
-        $this->indexes[$collType][] = $index;
+        return new Index($data);
     }
 
 }

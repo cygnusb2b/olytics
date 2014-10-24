@@ -29,8 +29,6 @@ class WebsitePersistor extends Persistor
      */
     protected $product;
 
-    protected $time;
-
     /**
      * Persists an event, it's session, and it's related entities to the database
      *
@@ -40,13 +38,12 @@ class WebsitePersistor extends Persistor
      * @param  string           $product
      * @param  boolean          $appendCustomer
      * @return void
+     * @todo   Need to determine how to store relatedEntities on the event directly...
      */
     public function persist(EventInterface $event, array $relatedEntities, $account, $product, $appendCustomer = false) {
 
         $this->account = strtolower($account);
         $this->product = strtolower($product);
-
-        $this->time = new DateTime();
 
         // Ensure account and product exists
         $this->validateProduct();
@@ -86,16 +83,44 @@ class WebsitePersistor extends Persistor
     }
 
     /**
-     * Gets the Event to the database
+     * Persists the Event to the database
      *
+     * @todo   This should dispatch an event once completed that the aggregations can hook into. For now just run manually.
      * @param  WebsiteEvent   $event
      * @return void
      */
     protected function persistEvent(WebsiteEvent $event)
     {
-        $this->getIndexManager()->createIndexes('event_ttl', $this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
+        $indexes = $this->getIndexManager()->indexFactoryMulti($this->getEventIndexes());
+        $this->getIndexManager()->createIndexes($indexes, $this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
 
-        $insertObj = [
+        $insertObj = $this->createInsertObject($event);
+
+        var_dump($insertObj);
+        die();
+
+        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
+
+        $queryBuilder
+            ->insert()
+            ->setNewObj($insertObj)
+            ->getQuery()
+            ->execute()
+        ;
+
+        // Execute aggregations
+
+    }
+
+    /**
+     * Creates the object to insert into the database
+     *
+     * @param  WebsiteEvent   $event
+     * @return void
+     */
+    protected function createInsertObject(WebsiteEvent $event)
+    {
+         $insertObj = [
             'action'    => $event->getAction(),
             'clientId'  => $event->getEntity()->getClientId(),
             'createdAt' => new MongoDate(time()),
@@ -114,9 +139,7 @@ class WebsitePersistor extends Persistor
 
         $relatedTo = $event->getEntity()->getRelatedTo();
 
-        // $addToSet ensures that previously set relatedTo arrays are not overwritten
-        // Drawback: relatedTo removals will not be reflected
-        if (!empty($relatedTo)) {
+        if (!$relatedTo->isEmpty()) {
             $insertObj['entity']['relatedTo'] = [];
             foreach ($relatedTo as $relatedEntity) {
                 $insertObj['entity']['relatedTo'][] = [
@@ -145,15 +168,21 @@ class WebsitePersistor extends Persistor
                 $insertObj['relatedEntities'][$type] = $keyValues;
             }
         }
+        return $insertObj;
+    }
 
-        $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
-
-        $queryBuilder
-            ->insert()
-            ->setNewObj($insertObj)
-            ->getQuery()
-            ->execute()
-        ;
+    /**
+     * Gets the index mapping for the event collection
+     *
+     * @return array
+     */
+    protected function getEventIndexes()
+    {
+        return [
+            ['keys' => ['clientId' => 1, 'action' => 1], 'options' => []],
+            ['keys' => ['createdAt' => 1], 'options' => ['expireAfterSeconds' => 60*60*24*30]],
+            ['keys' => ['session.id' => 1, 'session.customerId' => 1, 'session.visitorId' => 1], 'options' => []],
+        ];
     }
 
     /**

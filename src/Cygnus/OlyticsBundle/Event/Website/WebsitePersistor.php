@@ -105,7 +105,10 @@ class WebsitePersistor extends Persistor
             ->execute()
         ;
         // Execute aggregations
+        $start = microtime(true);
         $this->getAggregationManager()->executeAll($event, $this->account, $this->product);
+        var_dump(microtime(true) - $start);
+        die();
 
     }
 

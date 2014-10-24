@@ -6,7 +6,7 @@ parameters:
     cygnus_olytics.bot_detector.class: Cygnus\OlyticsBundle\Detector\BotDetector
     cygnus_olytics.aggregation_manager.class: Cygnus\OlyticsBundle\Aggregation\Manager
     cygnus_olytics.aggregation.abstract.class: Cygnus\OlyticsBundle\Aggregation\AbstractAggregation
-    cygnus_olytics.aggregation.ad_impression.class: Cygnus\OlyticsBundle\Aggregation\AdImpressionAggregation
+    cygnus_olytics.aggregation.openx.class: Cygnus\OlyticsBundle\Aggregation\OpenXImpressionAggregation
 
 services:
     cygnus_olytics.bot_detector:
@@ -43,9 +43,9 @@ services:
         abstract: true
         arguments: [ @cygnus_olytics.index_manager, @doctrine_mongodb.odm.olytics_connection ]
 
-    cygnus_olytics.aggregation.ad_impression:
+    cygnus_olytics.aggregation.openx:
         parent: cygnus_olytics.aggregation.abstract
-        class: %cygnus_olytics.aggregation.ad_impression.class%
+        class: %cygnus_olytics.aggregation.openx.class%
         tags:
             - { name: cygnus_olytics.aggregation }
 

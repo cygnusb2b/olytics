@@ -6,23 +6,59 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations\Index;
 
 class IndexManager
 {
+    /**
+     * The cache client service for caching the existence of indexes
+     *
+     * @var object
+     */
     protected $cacheClient;
 
+    /**
+     * The MongoDB connection to write the indexes to
+     *
+     * @var Doctrine\MongoDB\Connection
+     */
     protected $connection;
 
+    /**
+     * Constructor.
+     *
+     * @param  Doctrine\MongoDB\Connection  $connection
+     * @param  object                       $cacheClient
+     * @return void
+     */
     public function __construct(Connection $connection, $cacheClient)
     {
         $this->connection = $connection;
         $this->cacheClient = $cacheClient;
     }
 
+    /**
+     * Creates the indexes on the DB and Collection
+     * Will check cache to see if the indexes already exist before executing
+     *
+     * @param  array<Doctrine\ODM\MongoDB\Mapping\Annotations\Index>    $indexes
+     * @param  string                                                   $dbName
+     * @param  string                                                   $collName
+     * @return self
+     */
     public function createIndexes(array $indexes, $dbName, $collName)
     {
         if (!$this->indexesExist($dbName, $collName)) {
             $this->doCreateIndexes($indexes, $dbName, $collName);
         }
+        return $this;
     }
 
+    /**
+     * Notifies New Relic of an error
+     *
+     * @param  string   $message
+     * @param  string   $dbName
+     * @param  string   $collName
+     * @param  mixed    $response
+     * @return void
+     */
     protected function notifyNewRelic($message, $dbName, $collName, $response)
     {
         if (extension_loaded('newrelic')) {
@@ -33,6 +69,14 @@ class IndexManager
         }
     }
 
+    /**
+     * Creates the indexes on a MongoDB collection
+     *
+     * @param  array<Doctrine\ODM\MongoDB\Mapping\Annotations\Index>    $indexes
+     * @param  string                                                   $dbName
+     * @param  string                                                   $collName
+     * @return self
+     */
     protected function doCreateIndexes(array $indexes, $dbName, $collName)
     {
         $collection = $this->connection->selectCollection($dbName, $collName);
@@ -54,13 +98,21 @@ class IndexManager
             $result = $collection->ensureIndex($index->keys, $options);
             if (!$result || $result['ok'] != 1) {
                 $this->notifyNewRelic('Unable to create index', $dbName, $collName, $result);
-                return false;
+                return $this;
             }
         }
         $cacheKey = $this->getCacheKey($dbName, $collName);
         $this->cacheClient->set($cacheKey, true);
+        return $this;
     }
 
+    /**
+     * Determines if an index exists
+     *
+     * @param  string   $dbName
+     * @param  string   $collName
+     * @return bool
+     */
     public function indexesExist($dbName, $collName)
     {
         $cacheKey = $this->getCacheKey($dbName, $collName);
@@ -70,11 +122,25 @@ class IndexManager
         return false;
     }
 
+    /**
+     * Gets the cache key of a DB and Collection
+     *
+     * @param  string   $dbName
+     * @param  string   $collName
+     * @return bool
+     */
     public function getCacheKey($dbName, $collName)
     {
         return sprintf('Olytics:IndexManager:%s:%s', $dbName, $collName);
     }
 
+    /**
+     * Factory that creates Index objects from an array of index definitions
+     *
+     * @param  array   $indexes
+     * @return array<Doctrine\ODM\MongoDB\Mapping\Annotations\Index>
+     * @throws \InvalidArgumentException If index mapping is invalid
+     */
     public function indexFactoryMulti(array $indexes)
     {
         $objects = [];
@@ -94,6 +160,13 @@ class IndexManager
         return $objects;
     }
 
+    /**
+     * Factory that creates a single Index from an index mapping
+     *
+     * @param  array    $keys
+     * @param  array    $options
+     * @return Doctrine\ODM\MongoDB\Mapping\Annotations\Index
+     */
     public function indexFactory(array $keys, array $options)
     {
         $data = [];

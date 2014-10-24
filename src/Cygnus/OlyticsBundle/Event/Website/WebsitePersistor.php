@@ -96,9 +96,6 @@ class WebsitePersistor extends Persistor
 
         $insertObj = $this->createInsertObject($event);
 
-        var_dump($insertObj);
-        die();
-
         $queryBuilder = $this->createQueryBuilder($this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
 
         $queryBuilder

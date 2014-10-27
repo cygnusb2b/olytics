@@ -19,6 +19,7 @@ class BacksyncController extends Controller
     public function indexAction()
     {
         ini_set('memory_limit', '1024M');
+        set_time_limit(0);
 
         while (@ob_end_flush());
         ob_implicit_flush(true);

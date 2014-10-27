@@ -19,7 +19,6 @@ class BacksyncController extends Controller
     public function indexAction()
     {
         ini_set('memory_limit', '1024M');
-        set_time_limit(0);
 
         while (@ob_end_flush());
         ob_implicit_flush(true);
@@ -68,6 +67,8 @@ class BacksyncController extends Controller
             $upserted = 0;
 
             foreach ($adEventCursor as $adEvent) {
+
+                set_time_limit(10);
 
                 if (!isset($adEvent['relatedEntities'])) {
                     $skipped++;

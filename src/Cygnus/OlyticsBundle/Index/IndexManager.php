@@ -6,30 +6,59 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations\Index;
 
 class IndexManager
 {
-
-    protected $indexes = [];
-
+    /**
+     * The cache client service for caching the existence of indexes
+     *
+     * @var object
+     */
     protected $cacheClient;
 
+    /**
+     * The MongoDB connection to write the indexes to
+     *
+     * @var Doctrine\MongoDB\Connection
+     */
     protected $connection;
 
+    /**
+     * Constructor.
+     *
+     * @param  Doctrine\MongoDB\Connection  $connection
+     * @param  object                       $cacheClient
+     * @return void
+     */
     public function __construct(Connection $connection, $cacheClient)
     {
         $this->connection = $connection;
         $this->cacheClient = $cacheClient;
-
-        $this->setSessionIndexes();
-        $this->setEventIndexes();
-        $this->setEntityIndexes();
     }
 
-    public function createIndexes($type, $dbName, $collName)
+    /**
+     * Creates the indexes on the DB and Collection
+     * Will check cache to see if the indexes already exist before executing
+     *
+     * @param  array<Doctrine\ODM\MongoDB\Mapping\Annotations\Index>    $indexes
+     * @param  string                                                   $dbName
+     * @param  string                                                   $collName
+     * @return self
+     */
+    public function createIndexes(array $indexes, $dbName, $collName)
     {
         if (!$this->indexesExist($dbName, $collName)) {
-            $this->doCreateIndexes($type, $dbName, $collName);
+            $this->doCreateIndexes($indexes, $dbName, $collName);
         }
+        return $this;
     }
 
+    /**
+     * Notifies New Relic of an error
+     *
+     * @param  string   $message
+     * @param  string   $dbName
+     * @param  string   $collName
+     * @param  mixed    $response
+     * @return void
+     */
     protected function notifyNewRelic($message, $dbName, $collName, $response)
     {
         if (extension_loaded('newrelic')) {
@@ -40,22 +69,50 @@ class IndexManager
         }
     }
 
-    protected function doCreateIndexes($type, $dbName, $collName)
+    /**
+     * Creates the indexes on a MongoDB collection
+     *
+     * @param  array<Doctrine\ODM\MongoDB\Mapping\Annotations\Index>    $indexes
+     * @param  string                                                   $dbName
+     * @param  string                                                   $collName
+     * @return self
+     */
+    protected function doCreateIndexes(array $indexes, $dbName, $collName)
     {
         $collection = $this->connection->selectCollection($dbName, $collName);
+        foreach ($indexes as $index) {
 
-        foreach ($this->getIndexesFor($type) as $index) {
-            $options = ($index->unique === true) ? ['unique' => true, 'background' => true, 'safe' => true] : ['background' => true, 'safe' => true];
+            if (!$index instanceof Index) {
+                throw new \InvalidArgumentException('Each index must be an instance of Doctrine\ODM\MongoDB\Mapping\Annotations\Index');
+            }
+
+            $options = ['background' => true, 'w' => 1];
+            if ($index->unique) {
+                $options['unique'] = true;
+            }
+
+            if (0 < $expire = $index->expireAfterSeconds) {
+                $options['expireAfterSeconds'] = $expire;
+            }
+
             $result = $collection->ensureIndex($index->keys, $options);
             if (!$result || $result['ok'] != 1) {
                 $this->notifyNewRelic('Unable to create index', $dbName, $collName, $result);
-                return false;
+                return $this;
             }
         }
         $cacheKey = $this->getCacheKey($dbName, $collName);
         $this->cacheClient->set($cacheKey, true);
+        return $this;
     }
 
+    /**
+     * Determines if an index exists
+     *
+     * @param  string   $dbName
+     * @param  string   $collName
+     * @return bool
+     */
     public function indexesExist($dbName, $collName)
     {
         $cacheKey = $this->getCacheKey($dbName, $collName);
@@ -65,51 +122,61 @@ class IndexManager
         return false;
     }
 
+    /**
+     * Gets the cache key of a DB and Collection
+     *
+     * @param  string   $dbName
+     * @param  string   $collName
+     * @return bool
+     */
     public function getCacheKey($dbName, $collName)
     {
-        return sprintf('Olytics:IndexManager:%s:%s', $dbName, $collName);
+        $conName = str_replace(':', 'p', (String) $this->connection);
+        return sprintf('Olytics:IndexManager:%s:%s:%s', $conName, $dbName, $collName);
     }
 
-    public function getIndexes()
+    /**
+     * Factory that creates Index objects from an array of index definitions
+     *
+     * @param  array   $indexes
+     * @return array<Doctrine\ODM\MongoDB\Mapping\Annotations\Index>
+     * @throws \InvalidArgumentException If index mapping is invalid
+     */
+    public function indexFactoryMulti(array $indexes)
     {
-        return $this->indexes;
-    }
+        $objects = [];
+        foreach ($indexes as $index) {
+            if (!is_array($index) || !isset($index['keys']) || !is_array($index['keys'])) {
+                throw new \InvalidArgumentException('Each index must contain an array of keys.');
+            }
+            if (!isset($index['options'])) {
+                $index['options'] = [];
+            }
+            if (!is_array($index['options'])) {
+                throw new \InvalidArgumentException('Options must be passed as an array.');
+            }
 
-    public function getIndexesFor($type)
-    {
-        if (isset($this->indexes[$type])) {
-            return $this->indexes[$type];
+            $objects[] = $this->indexFactory($index['keys'], $index['options']);
         }
-        return [];
+        return $objects;
     }
 
-    public function setSessionIndexes()
+    /**
+     * Factory that creates a single Index from an index mapping
+     *
+     * @param  array    $keys
+     * @param  array    $options
+     * @return Doctrine\ODM\MongoDB\Mapping\Annotations\Index
+     */
+    public function indexFactory(array $keys, array $options)
     {
-        $this->addIndex('session', ['sessionId' => 1], true);
-        $this->addIndex('session', ['visitorId' => 1]);
-        $this->addIndex('session', ['customerId' => 1]);
-    }
+        $data = [];
+        $data['keys'] = $keys;
 
-    public function setEventIndexes()
-    {
-        $this->addIndex('event', ['sessionId' => 1]);
-        $this->addIndex('event', ['clientId' => 1, 'action' => 1]);
-        $this->addIndex('event', ['createdAt' => 1]);
-    }
-
-    public function setEntityIndexes()
-    {
-        $this->addIndex('entity', ['clientId' => 1], true);
-    }
-
-    public function addIndex($collType, array $keys, $unique = false)
-    {
-        $collType = strtolower($collType);
-
-        $data = ['keys' => $keys, 'unique' => $unique];
-        $index = new Index($data);
-
-        $this->indexes[$collType][] = $index;
+        foreach ($options as $key => $option) {
+            $data[$key] = $option;
+        }
+        return new Index($data);
     }
 
 }

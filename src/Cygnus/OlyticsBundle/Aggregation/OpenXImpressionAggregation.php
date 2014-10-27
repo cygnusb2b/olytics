@@ -32,7 +32,7 @@ class OpenXImpressionAggregation extends AbstractAggregation
     protected function doExecute(EventInterface $event, $accountKey, $groupKey)
     {
         $dbName = sprintf('oly_%s_%s_aggregation', $accountKey, $groupKey);
-        $collName = 'impressions';
+        $collName = 'openx_feed';
 
         $this->createIndexes($dbName, $collName);
 

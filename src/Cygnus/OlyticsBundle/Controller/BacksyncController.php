@@ -124,27 +124,27 @@ class BacksyncController extends Controller
 
     public function doFeedUpsert($group, array $upsert)
     {
-        $builder = $this->createFeedQueryBuilder($group)
-            ->update()
-            ->upsert(true)
-            ->setNewObj($upsert['doc'])
-        ;
-        foreach ($upsert['criteria'] as $field => $value) {
-            $builder->field($field)->equals($value);
-        }
+        // $builder = $this->createFeedQueryBuilder($group)
+        //     ->update()
+        //     ->upsert(true)
+        //     ->setNewObj($upsert['doc'])
+        // ;
+        // foreach ($upsert['criteria'] as $field => $value) {
+        //     $builder->field($field)->equals($value);
+        // }
 
-        try {
-            $builder->getQuery()->execute();
-            unset($builder);
-        } catch (\MongoCursorException $e) {
-            if ($e->getCode() != 17280) {
-                // Throw all but 'key too large to index'
-                throw $e;
-            }
-        } catch (\Exception $e) {
-            // Throw all other Exceptions
-            throw $e;
-        }
+        // try {
+        //     $builder->getQuery()->execute();
+        //     unset($builder);
+        // } catch (\MongoCursorException $e) {
+        //     if ($e->getCode() != 17280) {
+        //         // Throw all but 'key too large to index'
+        //         throw $e;
+        //     }
+        // } catch (\Exception $e) {
+        //     // Throw all other Exceptions
+        //     throw $e;
+        // }
     }
 
     protected function getMemoryUsage()

@@ -66,10 +66,12 @@ class BacksyncController extends Controller
             $skipped = 0;
             $upserted = 0;
 
-            $builder = $this->createFeedQueryBuilder($group)
-                ->update()
-                ->upsert(true)
-            ;
+            // $builder = $this->createFeedQueryBuilder($group)
+            //     ->update()
+            //     ->upsert(true)
+            // ;
+
+            $collection = $this->getFeedConnection()->selectCollection($this->getFeedDb($group), $this->getFeedCollection($group));
 
             foreach ($adEventCursor as $adEvent) {
 
@@ -89,13 +91,14 @@ class BacksyncController extends Controller
 
                 $upsert = $this->createUpsert($adEvent, $data['adRequest']);
 
-                $builder
-                    ->field('metadata')->equals($upsert['metadata'])
-                    ->setNewObj($upsert['doc'])
-                ;
+                // $builder
+                //     ->field('metadata')->equals($upsert['metadata'])
+                //     ->setNewObj($upsert['doc'])
+                // ;
 
                 try {
-                    $this->doFeedUpsert($builder);
+
+                    $this->doFeedUpsert($collection, $upsert['metadata'], $upsert['doc']);
                     $upserted++;
                 } catch (\Exception $e) {
                     echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
@@ -132,10 +135,10 @@ class BacksyncController extends Controller
         die();
     }
 
-    public function doFeedUpsert(Builder $builder)
+    public function doFeedUpsert($collection, $metadata, array $newObj)
     {
         try {
-            $builder->getQuery()->execute();
+            $collection->upsert(['metadata' => $metadata], $newObj);
         } catch (\MongoCursorException $e) {
             if ($e->getCode() != 17280) {
                 // Throw all but 'key too large to index'

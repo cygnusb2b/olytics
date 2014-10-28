@@ -10,8 +10,8 @@ class BacksyncController extends Controller
     const MAX_SOURCE_RECORDS = 200000;
 
     public $olyticsConns = [
-        'db9'   => ['fhc', 'ofcr'],
-        'aws'   => ['cavc', 'll', 'vspc', 'sdce', 'fl', 'mass', 'gip', 'mprc', 'fcp', 'ooh', 'frpc', 'csn', 'autm', 'emsr'],
+        'db9'   => ['fhc', 'ofcr', 'autm'],
+        'aws'   => ['cavc', 'll', 'vspc', 'sdce', 'fl', 'mass', 'gip', 'mprc', 'fcp', 'ooh', 'frpc', 'csn', 'emsr'],
     ];
 
     public $groups = ['cavc', 'll', 'ofcr', 'vspc', 'sdce', 'fl', 'mass', 'gip', 'mprc', 'fcp', 'ooh', 'frpc', 'csn', 'autm', 'emsr', 'fhc'];

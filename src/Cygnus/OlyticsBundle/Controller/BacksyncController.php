@@ -135,6 +135,7 @@ class BacksyncController extends Controller
 
         try {
             $builder->getQuery()->execute();
+            unset($builder);
         } catch (\MongoCursorException $e) {
             if ($e->getCode() != 17280) {
                 // Throw all but 'key too large to index'

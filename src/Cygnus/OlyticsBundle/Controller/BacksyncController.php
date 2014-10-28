@@ -337,8 +337,9 @@ class BacksyncController extends Controller
 
     public function getAdEventsByDate($group, \MongoDate $lastInsert = null, $recordLimit = null)
     {
+        $maxRange = '+10 Days';
         $stop = strtotime('2014-10-27 08:00:00');
-        $stop = (strtotime('+1 Week', $lastInsert->sec) > $stop) ? $stop : strtotime('+1 Week', $lastInsert->sec);
+        $stop = (strtotime($maxRange, $lastInsert->sec) > $stop) ? $stop : strtotime($maxRange, $lastInsert->sec);
 
         return $this->createOlyticsQueryBuilder($group, $lastInsert)
             ->find()

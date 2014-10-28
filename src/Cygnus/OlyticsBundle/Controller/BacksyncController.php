@@ -66,6 +66,11 @@ class BacksyncController extends Controller
             $skipped = 0;
             $upserted = 0;
 
+            $builder = $this->createFeedQueryBuilder($group)
+                ->update()
+                ->upsert(true)
+            ;
+
             foreach ($adEventCursor as $adEvent) {
 
                 set_time_limit(10);
@@ -84,8 +89,13 @@ class BacksyncController extends Controller
 
                 $upsert = $this->createUpsert($adEvent, $data['adRequest']);
 
+                $builder
+                    ->field('metadata')->equals($upsert['metadata'])
+                    ->setNewObj($upsert['doc'])
+                ;
+
                 try {
-                    $this->doFeedUpsert($group, $upsert);
+                    $this->doFeedUpsert($builder);
                     $upserted++;
                 } catch (\Exception $e) {
                     echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
@@ -122,29 +132,19 @@ class BacksyncController extends Controller
         die();
     }
 
-    public function doFeedUpsert($group, array $upsert)
+    public function doFeedUpsert(Builder $builder)
     {
-        // $builder = $this->createFeedQueryBuilder($group)
-        //     ->update()
-        //     ->upsert(true)
-        //     ->setNewObj($upsert['doc'])
-        // ;
-        // foreach ($upsert['criteria'] as $field => $value) {
-        //     $builder->field($field)->equals($value);
-        // }
-
-        // try {
-        //     $builder->getQuery()->execute();
-        //     unset($builder);
-        // } catch (\MongoCursorException $e) {
-        //     if ($e->getCode() != 17280) {
-        //         // Throw all but 'key too large to index'
-        //         throw $e;
-        //     }
-        // } catch (\Exception $e) {
-        //     // Throw all other Exceptions
-        //     throw $e;
-        // }
+        try {
+            $builder->getQuery()->execute();
+        } catch (\MongoCursorException $e) {
+            if ($e->getCode() != 17280) {
+                // Throw all but 'key too large to index'
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            // Throw all other Exceptions
+            throw $e;
+        }
     }
 
     protected function getMemoryUsage()
@@ -176,11 +176,7 @@ class BacksyncController extends Controller
                 'impressions.ads.' . $adEvent['clientId'] => 1,
             ),
         );
-
-        $criteria = array(
-            'metadata' => $metadata,
-        );
-        return ['doc' => $upsertDoc, 'criteria' => $criteria];
+        return ['doc' => $upsertDoc, 'metadata' => $metadata];
     }
 
     public function getKeyValuesFromRequest(array $keyValues)

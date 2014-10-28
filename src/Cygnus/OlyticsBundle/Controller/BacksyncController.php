@@ -71,8 +71,7 @@ class BacksyncController extends Controller
             //     ->upsert(true)
             // ;
 
-            $collection = $this->getFeedConnection()->selectCollection($this->getFeedDb($group), $this->getFeedCollection($group));
-
+            $collection = $this->getFeedConnection()->selectCollection($this->getFeedDb($group), $this->getFeedCollection($group))->getMongoCollection();
             foreach ($adEventCursor as $adEvent) {
 
                 set_time_limit(10);
@@ -138,7 +137,7 @@ class BacksyncController extends Controller
     public function doFeedUpsert($collection, $metadata, array $newObj)
     {
         try {
-            $collection->upsert(['metadata' => $metadata], $newObj);
+            $collection->update(['metadata' => $metadata], $newObj, ['upsert' => true]);
         } catch (\MongoCursorException $e) {
             if ($e->getCode() != 17280) {
                 // Throw all but 'key too large to index'

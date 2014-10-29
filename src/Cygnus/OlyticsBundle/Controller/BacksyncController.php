@@ -34,101 +34,108 @@ class BacksyncController extends Controller
         }
 
         $recordLimit = ($query->has('limit')) ? (int) $query->get('limit') : null;
+        $pages = ($query->has('pages')) ? (int) $query->get('pages') : 1;
 
         foreach ($groups as $group) {
-            if (!in_array($group, $this->groups)) {
-                echo sprintf('Group "%s" not found as a valid group. Skipping.'."\r\n\r\n", $group);
-                continue;
-            }
 
-            $start = microtime(true);
-            echo "Starting aggregation for group '{$group}'\r\n";
+            for ($i = 0; $i < $pages; $i++) {
 
-            $lastInsert = $this->getFeedLastInsert($group);
+                $currentPage = $i + 1;
 
-            echo sprintf("Requesting %s ad impressions since %s from %s::%s on %s\r\n", number_format($this->getSourceRecordLimit($recordLimit)), date('Y-m-d H:i:s', $lastInsert->sec), $this->getOlyticsDatabase($group), $this->getOlyticsColl($lastInsert), $this->getOlyticsConnName($group));
-
-            // Get the ad events cursor
-            $adEventCursor = $this->getAdEventsByDate($group, $lastInsert, $recordLimit);
-            $cusorCount = $adEventCursor->count(true);
-
-            echo sprintf("Cursor generation complete. Found %s ad events.\r\n", number_format($cusorCount));
-
-            $page = $cusorCount / 100;
-
-            echo sprintf("Starting aggregation of ad impressions. Each '.' represents ~%s records.\r\nProcessing\r\n", round($page, 2));
-            echo str_repeat('-', 100) . "\r\n";
-
-            $processed = 0;
-            $percentage = 0;
-            $periods = 0;
-            $skipped = 0;
-            $upserted = 0;
-
-            // $builder = $this->createFeedQueryBuilder($group)
-            //     ->update()
-            //     ->upsert(true)
-            // ;
-
-            $collection = $this->getFeedConnection()->selectCollection($this->getFeedDb($group), $this->getFeedCollection($group))->getMongoCollection();
-            foreach ($adEventCursor as $adEvent) {
-
-                set_time_limit(10);
-
-                if (!isset($adEvent['relatedEntities'])) {
-                    $skipped++;
+                if (!in_array($group, $this->groups)) {
+                    echo sprintf('Group "%s" not found as a valid group. Skipping.'."\r\n\r\n", $group);
                     continue;
                 }
 
-                $data = $adEvent['relatedEntities'];
+                $start = microtime(true);
+                echo "Starting aggregation for group '{$group}' page #{$currentPage} out of {$pages} pages\r\n";
 
-                if (!isset($data['adRequest']) || !isset($data['adRequest']['addAdUnit'])) {
-                    $skipped++;
-                    continue;
-                }
+                $lastInsert = $this->getFeedLastInsert($group);
 
-                $upsert = $this->createUpsert($adEvent, $data['adRequest']);
+                echo sprintf("Requesting %s ad impressions since %s from %s::%s on %s\r\n", number_format($this->getSourceRecordLimit($recordLimit)), date('Y-m-d H:i:s', $lastInsert->sec), $this->getOlyticsDatabase($group), $this->getOlyticsColl($lastInsert), $this->getOlyticsConnName($group));
 
-                // $builder
-                //     ->field('metadata')->equals($upsert['metadata'])
-                //     ->setNewObj($upsert['doc'])
+                // Get the ad events cursor
+                $adEventCursor = $this->getAdEventsByDate($group, $lastInsert, $recordLimit);
+                $cusorCount = $adEventCursor->count(true);
+
+                echo sprintf("Cursor generation complete. Found %s ad events.\r\n", number_format($cusorCount));
+
+                $page = $cusorCount / 100;
+
+                echo sprintf("Starting aggregation of ad impressions. Each '.' represents ~%s records.\r\nProcessing\r\n", round($page, 2));
+                echo str_repeat('-', 100) . "\r\n";
+
+                $processed = 0;
+                $percentage = 0;
+                $periods = 0;
+                $skipped = 0;
+                $upserted = 0;
+
+                // $builder = $this->createFeedQueryBuilder($group)
+                //     ->update()
+                //     ->upsert(true)
                 // ;
 
-                try {
+                $collection = $this->getFeedConnection()->selectCollection($this->getFeedDb($group), $this->getFeedCollection($group))->getMongoCollection();
+                foreach ($adEventCursor as $adEvent) {
 
-                    $this->doFeedUpsert($collection, $upsert['metadata'], $upsert['doc']);
-                    $upserted++;
-                } catch (\Exception $e) {
-                    echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
-                    break 2;
+                    set_time_limit(10);
+
+                    if (!isset($adEvent['relatedEntities'])) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $data = $adEvent['relatedEntities'];
+
+                    if (!isset($data['adRequest']) || !isset($data['adRequest']['addAdUnit'])) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $upsert = $this->createUpsert($adEvent, $data['adRequest']);
+
+                    // $builder
+                    //     ->field('metadata')->equals($upsert['metadata'])
+                    //     ->setNewObj($upsert['doc'])
+                    // ;
+
+                    try {
+
+                        $this->doFeedUpsert($collection, $upsert['metadata'], $upsert['doc']);
+                        $upserted++;
+                    } catch (\Exception $e) {
+                        echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
+                        break 2;
+                    }
+
+                    $processed++;
+                    $increment = 1 / $page;
+                    $floored = floor($increment);
+                    $percentage += $increment;
+
+                    if ($floored > 0) {
+                        $periods += $floored;
+                        echo str_repeat('.', $floored);
+                    } else if (floor($percentage) > 0) {
+                        $periods += floor($percentage);
+                        echo str_repeat('.', floor($percentage));
+                        $percentage = 0;
+                    }
+
                 }
 
-                $processed++;
-                $increment = 1 / $page;
-                $floored = floor($increment);
-                $percentage += $increment;
-
-                if ($floored > 0) {
-                    $periods += $floored;
-                    echo str_repeat('.', $floored);
-                } else if (floor($percentage) > 0) {
-                    $periods += floor($percentage);
-                    echo str_repeat('.', floor($percentage));
-                    $percentage = 0;
+                if ($periods < 100) {
+                    echo str_repeat('.', 100 - $periods);
                 }
 
+                $processingProfile = round(microtime(true) - $start, 3);
+                $display = str_repeat('-', 100);
+
+                $recordsPerSecond = round($upserted / $processingProfile, 2);
+
+                echo "\r\n{$display}\r\nAggregation for {$group} complete. Processed: {$upserted}, Skipped: {$skipped}, Took: {$processingProfile} seconds ({$recordsPerSecond} rec/s). Memory: {$this->getMemoryUsage()}\r\n\r\n";
             }
-
-            if ($periods < 100) {
-                echo str_repeat('.', 100 - $periods);
-            }
-
-            $processingProfile = round(microtime(true) - $start, 3);
-            $display = str_repeat('-', 100);
-
-            $recordsPerSecond = round($upserted / $processingProfile, 2);
-
-            echo "\r\n{$display}\r\nAggregation for {$group} complete. Processed: {$upserted}, Skipped: {$skipped}, Took: {$processingProfile} seconds ({$recordsPerSecond} rec/s). Memory: {$this->getMemoryUsage()}\r\n\r\n";
         }
         die();
     }

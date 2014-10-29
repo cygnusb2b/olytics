@@ -199,6 +199,9 @@ class MergeController extends Controller
 
     protected function getOlyticsAggDb($group)
     {
+        if ($group === 'autm') {
+            $group = 'vmw';
+        }
         $account = (in_array($group, ['fcp', 'fl', 'ooh', 'sdce'])) ? 'acbm' : 'cygnus';
         return sprintf('oly_%s_%s_aggregation', $account, $group);
     }

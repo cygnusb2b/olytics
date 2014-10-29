@@ -165,7 +165,7 @@ class MergeController extends Controller
             $builder->limit(1);
         } else {
 
-            $requestedStop = strtotime('+1 Month', $lastMerged->sec);
+            $requestedStop = strtotime('+3 Months', $lastMerged->sec);
             $mustStop = strtotime(self::FINAL_IMPORT_DATE);
 
             $stop = ($requestedStop > $mustStop) ? $mustStop : $requestedStop;

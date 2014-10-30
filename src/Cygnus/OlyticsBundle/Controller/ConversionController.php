@@ -30,15 +30,131 @@ class ConversionController extends Controller
         'fhc' => 'www.firehouse.com',
     ];
 
-    public function appendUserIdsAction()
+    protected function init()
     {
-
         ini_set('memory_limit', '1024M');
 
         while (@ob_end_flush());
         ob_implicit_flush(true);
         echo str_repeat(' ', 4096);
         echo '<pre>';
+    }
+
+    public function appendUserIdsToEventsAction()
+    {
+        $this->init();
+
+        $query = $this->get('request')->query;
+
+        $groups = $query->get('groups');
+        if (empty($groups) || 'all' === $groups) {
+            $groups = $this->groups;
+        } else {
+            $groups = explode(',',$groups);
+        }
+
+        $conn = $query->get('conn');
+        if (!in_array($conn, ['db9', 'olytics'])) {
+            echo 'Invalid connection specified.';
+            die();
+        }
+
+        foreach ($groups as $group) {
+
+            if (!in_array($group, $this->groups)) {
+                echo sprintf('Group "%s" not found as a valid group. Skipping.'."\r\n\r\n", $group);
+                continue;
+            }
+
+            echo "Appending user ids for group '{$group}'\r\n";
+
+            $account = (in_array($group, ['fcp', 'fl', 'ooh', 'sdce'])) ? 'acbm' : 'cygnus';
+            $dbName = sprintf('oly_%s_%s', $account, $group);
+            $conName = 'doctrine_mongodb.odm.'.$conn.'_connection';
+
+            $connection = $this->get($conName);
+
+            foreach ($this->quarters as $quarter) {
+                $collName = sprintf('session.%s', $quarter);
+                echo "Reading session data from Olytics {$dbName}::{$collName} on {$conName}\r\n";
+
+                $builder = new Builder($connection->selectCollection($dbName, $collName));
+                $cursor = $builder
+                    ->find()
+                    ->field('userId')->exists(true)
+                    ->select(['userId', 'sessionId'])
+                    ->exclude('_id')
+                    ->getQuery()
+                    ->execute()
+                ;
+
+                echo sprintf("Cursor generation complete. Found %s sessions with user ids.\r\n", number_format($cursor->count()));
+
+                $page = count($cursor) / 100;
+
+                $contentColl = sprintf('event.content.%s', $quarter);
+                echo sprintf('Updating events in %s::%s - Each \'.\' represents ~%s user ids'."\r\n", $dbName, $contentColl, $page);
+                echo str_repeat('-', 100) . "\r\n";
+
+                $collection = $connection->selectCollection($dbName, $contentColl)->getMongoCollection();
+
+                $processed = 0;
+                $percentage = 0;
+                $periods = 0;
+                $skipped = 0;
+                $upserted = 0;
+
+                foreach ($cursor as $session) {
+
+                    $criteria = [
+                        'sessionId' => $session['sessionId'],
+                    ];
+
+                    $newObj = [
+                        '$set'  => [
+                            'userId'    => $session['userId'],
+                        ]
+                    ];
+
+                    $options = [
+                        'multiple'  => true,
+                    ];
+
+                    $processed++;
+                    $increment = 1 / $page;
+                    $floored = floor($increment);
+                    $percentage += $increment;
+
+                    try {
+                        $collection->update($criteria, $newObj, $options);
+                        $upserted++;
+                    } catch (\Exception $e) {
+                        echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
+                        die();
+                    }
+
+                    if ($floored > 0) {
+                        $periods += $floored;
+                        echo str_repeat('.', $floored);
+                    } else if (floor($percentage) > 0) {
+                        $periods += floor($percentage);
+                        echo str_repeat('.', floor($percentage));
+                        $percentage = 0;
+                    }
+                }
+
+                if ($periods < 100) {
+                    echo str_repeat('.', 100 - $periods);
+                }
+                echo "\r\n";
+            }
+            die();
+        }
+    }
+
+    public function appendUserIdsAction()
+    {
+        $this->init();
 
         $query = $this->get('request')->query;
 

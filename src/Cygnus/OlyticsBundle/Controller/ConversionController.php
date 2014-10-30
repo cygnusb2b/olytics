@@ -148,8 +148,8 @@ class ConversionController extends Controller
                 }
                 echo "\r\n";
             }
-            die();
         }
+        die();
     }
 
     public function appendUserIdsAction()

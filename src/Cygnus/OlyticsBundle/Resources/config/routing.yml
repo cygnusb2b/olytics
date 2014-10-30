@@ -10,6 +10,10 @@ cygnus_olytics_backsync_db9:
     pattern:  /backsync/db9
     defaults: { _controller: CygnusOlyticsBundle:Backsync:index }
 
+cygnus_olytics_update:
+    pattern:  /update
+    defaults: { _controller: CygnusOlyticsBundle:Update:index }
+
 cygnus_olytics_merge:
     pattern:  /merge
     defaults: { _controller: CygnusOlyticsBundle:Merge:index }

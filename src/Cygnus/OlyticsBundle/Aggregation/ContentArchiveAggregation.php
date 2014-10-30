@@ -31,8 +31,8 @@ class ContentArchiveAggregation extends AbstractAggregation
      */
     protected function doExecute(EventInterface $event, $accountKey, $groupKey)
     {
-        $dbName = sprintf('oly_%s_%s_aggregation', $accountKey, $groupKey);
-        $collName = 'archive_content_all';
+        $dbName = 'content_traffic_archive';
+        $collName = sprintf('%s_%s', $accountKey, $groupKey);
 
         $this->createIndexes($dbName, $collName);
 
@@ -91,6 +91,7 @@ class ContentArchiveAggregation extends AbstractAggregation
      */
     public function supports(EventInterface $event, $accountKey, $groupKey)
     {
+        return false;
         if (!$this->isEnabled($accountKey, $groupKey)) {
             return false;
         }

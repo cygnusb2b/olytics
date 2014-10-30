@@ -265,6 +265,7 @@ class OpenXImpressionAggregation extends AbstractAggregation
      */
     public function supports(EventInterface $event, $accountKey, $groupKey)
     {
+        return false;
         if (!$this->isEnabled($accountKey, $groupKey)) {
             return false;
         }

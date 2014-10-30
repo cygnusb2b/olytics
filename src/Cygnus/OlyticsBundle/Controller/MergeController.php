@@ -99,7 +99,7 @@ class MergeController extends Controller
                 );
 
                 foreach ($feed['impressions']['ads'] as $clientId => $impressions) {
-                    $upsertDoc['$inc']['impressions.'.$clientId] = $impressions;
+                    $upsertDoc['$inc']['impressions.ads.'.$clientId] = $impressions;
                 }
 
                 try {

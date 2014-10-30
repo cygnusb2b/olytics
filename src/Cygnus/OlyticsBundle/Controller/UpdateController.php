@@ -9,7 +9,7 @@ class UpdateController extends Controller
 {
     const MAX_SOURCE_RECORDS = 500000;
 
-    public $groups = ['siw','cavc', 'll', 'ofcr', 'vspc', 'sdce', 'fl', 'mass', 'gip', 'mprc', 'fcp', 'ooh', 'frpc', 'csn', 'autm', 'emsr', 'fhc'];
+    public $groups = ['siw','cavc', 'll', 'ofcr', 'vspc', 'sdce', 'fl', 'mass', 'gip', 'mprc', 'fcp', 'ooh', 'frpc', 'csn', 'vmw', 'emsr', 'fhc'];
 
     public function indexAction()
     {

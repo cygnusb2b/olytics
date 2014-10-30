@@ -13,3 +13,7 @@ cygnus_olytics_library:
 cygnus_olytics_test_request:
     pattern:  /test
     defaults: { _controller: CygnusOlyticsBundle:Test:index }
+
+cygnus_olytics_conversion_userid:
+    pattern:  /conversion/userids
+    defaults: { _controller: CygnusOlyticsBundle:Conversion:appendUserIds }

@@ -73,12 +73,22 @@ doctrine_mongodb:
         db9:
             server: mongodb://db9.cygnuspub.com:27017
             options: {}
+        merrick:
+            server: 'mongodb://10.0.2.246:27017,10.0.85.15:27017,10.0.168.158:27017'
+            options:
+                readPreference: nearest
+                replicaSet: merrick
+                journal: false
+                w: 1
     document_managers:
         default:
             connection: default
             auto_mapping: true
         db9:
             connection: db9
+            auto_mapping: false
+        merrick:
+            connection: merrick
             auto_mapping: false
 
 # Doctrine Configuration

@@ -13,6 +13,7 @@ class UpdateController extends Controller
 
     public function indexAction()
     {
+        die('Deprecated');
         ini_set('memory_limit', '1024M');
 
         while (@ob_end_flush());

@@ -17,3 +17,7 @@ cygnus_olytics_test_request:
 cygnus_olytics_conversion_userid:
     pattern:  /conversion/userids
     defaults: { _controller: CygnusOlyticsBundle:Conversion:appendUserIds }
+
+cygnus_olytics_conversion_events:
+    pattern:  /conversion/events
+    defaults: { _controller: CygnusOlyticsBundle:Conversion:appendUserIdsToEvents }

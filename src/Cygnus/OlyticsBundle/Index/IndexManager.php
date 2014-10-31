@@ -131,7 +131,6 @@ class IndexManager
      */
     public function getCacheKey($dbName, $collName)
     {
-        $conName = str_replace(':', 'p', (String) $this->connection);
         return sprintf('Olytics:IndexManager:%s:%s', $dbName, $collName);
     }
 

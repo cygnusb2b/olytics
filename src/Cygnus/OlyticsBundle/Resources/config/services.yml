@@ -7,6 +7,7 @@ parameters:
     cygnus_olytics.aggregation_manager.class: Cygnus\OlyticsBundle\Aggregation\Manager
     cygnus_olytics.aggregation.abstract.class: Cygnus\OlyticsBundle\Aggregation\AbstractAggregation
     cygnus_olytics.aggregation.openx.class: Cygnus\OlyticsBundle\Aggregation\OpenXImpressionAggregation
+    cygnus_olytics.aggregation.openx.user.class: Cygnus\OlyticsBundle\Aggregation\OpenXUserAggregation
     cygnus_olytics.aggregation.archive.content.class: Cygnus\OlyticsBundle\Aggregation\ContentArchiveAggregation
 
 services:
@@ -47,6 +48,12 @@ services:
     cygnus_olytics.aggregation.openx:
         parent: cygnus_olytics.aggregation.abstract
         class: %cygnus_olytics.aggregation.openx.class%
+        tags:
+            - { name: cygnus_olytics.aggregation }
+
+    cygnus_olytics.aggregation.openx.user:
+        parent: cygnus_olytics.aggregation.abstract
+        class: %cygnus_olytics.aggregation.openx.user.class%
         tags:
             - { name: cygnus_olytics.aggregation }
 

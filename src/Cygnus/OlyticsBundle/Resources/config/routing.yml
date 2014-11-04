@@ -21,3 +21,11 @@ cygnus_olytics_conversion_userid:
 cygnus_olytics_conversion_events:
     pattern:  /conversion/events
     defaults: { _controller: CygnusOlyticsBundle:Conversion:appendUserIdsToEvents }
+
+cygnus_olytics_conversion_archive:
+    pattern:  /conversion/archive
+    defaults: { _controller: CygnusOlyticsBundle:Conversion:archive }
+
+cygnus_olytics_conversion_create_session_archive:
+    pattern:  /conversion/session_archive/create
+    defaults: { _controller: CygnusOlyticsBundle:Conversion:createSessionArchive }

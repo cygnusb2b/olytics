@@ -13,7 +13,7 @@ class MongoIdType extends AbstractType
             try {
                 $value = new MongoId($value);
             } catch (\MongoException $e) {
-                $value = new MongoId();
+                $value = null;
             }
         }
         return $value;

@@ -38,7 +38,8 @@ class OpenXUserAggregation extends AbstractAggregation
         $this->createIndexes($dbName, $collName);
 
         // Format the user id and month for Mongo
-        $userId = new \MongoId($event->getSession()->getCustomerId());
+        $customerId = $event->getSession()->getCustomerId();
+        $userId = ($customer instanceof \MongoId) ? $customerId : new \MongoId($customerId);
         $start  = new \MongoDate(strtotime($event->getCreatedAt()->format('Y-m-01 00:00:00')));
 
         // Create the initial query builder that will handle the data upsert/aggregation
@@ -100,6 +101,10 @@ class OpenXUserAggregation extends AbstractAggregation
         if (empty($customerId)) {
             // No customer id on the event (anonymous)
             return false;
+        }
+
+        if ($customerId instanceof \MongoId) {
+            return true;
         }
 
         try {

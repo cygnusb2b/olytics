@@ -75,7 +75,7 @@ class ConversionController extends Controller
             $account = (in_array($group, ['fcp', 'fl', 'ooh', 'sdce'])) ? 'acbm' : 'cygnus';
 
             $fromDb = sprintf('oly_%s_%s', $account, $group);
-            $fromColl = 'event.content.2014_Q3';
+            $fromColl = 'event.content.2014_Q4';
 
             $toDb = 'content_session_archive';
             $toColl = sprintf('%s_%s', $account, $group);

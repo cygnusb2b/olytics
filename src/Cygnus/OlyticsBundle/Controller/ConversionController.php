@@ -196,6 +196,7 @@ class ConversionController extends Controller
 
     public function archiveAction()
     {
+        die('complete on db9, need to update to aws');
         $this->init();
 
         $groups = $this->getGroups();
@@ -442,6 +443,8 @@ class ConversionController extends Controller
             $upserted = 0;
 
             foreach ($cursor as $doc) {
+                set_time_limit(10);
+
                 // unset so we can handle diff
                 $omedaId = $doc['omeda_encrypted_id'];
                 if (isset($omedaIds[$omedaId])) {
@@ -546,6 +549,8 @@ class ConversionController extends Controller
 
             $invalid = [];
             foreach ($stringIds as $customerId => $set) {
+
+                set_time_limit(10);
 
                 try {
                     $mongoId = new \MongoId($customerId);

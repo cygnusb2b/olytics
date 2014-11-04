@@ -30,6 +30,7 @@ class ConversionController extends Controller
         'vmw' => 'www.vendingmarketwatch.com',
         'emsr' => 'www.emsworld.com',
         'fhc' => 'www.firehouse.com',
+        'siw' => 'www.securityinfowatch.com',
     ];
 
     protected function init()
@@ -74,8 +75,8 @@ class ConversionController extends Controller
 
             $account = (in_array($group, ['fcp', 'fl', 'ooh', 'sdce'])) ? 'acbm' : 'cygnus';
 
-            $fromDb = sprintf('oly_%s_%s', $account, $group);
-            $fromColl = 'event.content.2014_Q4';
+            $fromDb = sprintf('oly_%s_%s_events', $account, $group);
+            $fromColl = 'content';
 
             $toDb = 'content_session_archive';
             $toColl = sprintf('%s_%s', $account, $group);
@@ -128,12 +129,15 @@ class ConversionController extends Controller
 
             foreach ($cursor as $doc) {
 
+                var_dump($doc);
+                die();
+
                 set_time_limit(10);
 
                 $insert = [
                     'month'     => new \MongoDate(strtotime(date('Y-m-01 00:00:00', $doc['createdAt']->sec))),
                     'contentId' => (int) $doc['clientId'],
-                    'sessionId' => $doc['sessionId'],
+                    'sessionId' => $doc['session']['id'],
                 ];
 
                 if (isset($doc['userId'])) {
@@ -196,7 +200,7 @@ class ConversionController extends Controller
 
         $groups = $this->getGroups();
 
-        $conName = 'doctrine_mongodb.odm.olytics_connection';
+        $conName = 'doctrine_mongodb.odm.db9_connection';
         $connection = $this->get($conName);
 
         foreach ($groups as $group) {
@@ -260,22 +264,32 @@ class ConversionController extends Controller
             $skipped = 0;
             $upserted = 0;
 
+
+            $contentIds = [];
+
             foreach ($cursor as $doc) {
+
+                // var_dump($doc);
 
                 $metadata = [
                     'month'     => new \MongoDate(strtotime(date('Y-m-01 00:00:00', $doc['createdAt']->sec))),
                     'contentId' => (int) $doc['clientId'],
-                    'sessionId' => $doc['sessionId'],
                 ];
 
                 if (isset($doc['userId'])) {
                     $metadata['userId'] = $doc['userId'];
+                    $userId = (string) $doc['userId'];
+                } else {
+                    $userId = '(none)';
                 }
+
+
+                $contentIds[date('Y-m-d H:i:s', $metadata['month']->sec)][$doc['clientId']][$userId] =  true;
+
 
                 $newObj = [
                     '$setOnInsert'  => [
                         'metadata'  => $metadata,
-                        'visits'    => 1,
                     ],
                     '$set'          => [
                         'lastAccessed'  => $doc['createdAt']
@@ -285,13 +299,16 @@ class ConversionController extends Controller
                     ],
                 ];
 
+                // var_dump($newObj);
+                // die();
+
                 $processed++;
                 $increment = 1 / $page;
                 $floored = floor($increment);
                 $percentage += $increment;
 
                 try {
-                    $collection->update(['metadata' => $metadata], $newObj, ['upsert' => true]);
+                    // $collection->update(['metadata' => $metadata], $newObj, ['upsert' => true]);
                     $upserted++;
                 } catch (\Exception $e) {
                     echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
@@ -308,6 +325,9 @@ class ConversionController extends Controller
                 }
 
             }
+
+            var_dump($contentIds);
+            die();
 
             if ($periods < 100) {
                 echo str_repeat('.', 100 - $periods);
@@ -348,23 +368,13 @@ class ConversionController extends Controller
 
     public function appendUserIdsToEventsAction()
     {
-        die('done');
+
         $this->init();
 
-        $query = $this->get('request')->query;
+        $groups = $this->getGroups();
 
-        $groups = $query->get('groups');
-        if (empty($groups) || 'all' === $groups) {
-            $groups = $this->groups;
-        } else {
-            $groups = explode(',',$groups);
-        }
-
-        $conn = $query->get('conn');
-        if (!in_array($conn, ['db9', 'olytics'])) {
-            echo 'Invalid connection specified.';
-            die();
-        }
+        $conName = 'doctrine_mongodb.odm.olytics_connection';
+        $connection = $this->get($conName);
 
         foreach ($groups as $group) {
 
@@ -373,90 +383,235 @@ class ConversionController extends Controller
                 continue;
             }
 
-            echo "Appending user ids for group '{$group}'\r\n";
+            $start = microtime(true);
+
+            echo "Converting user ids for group '{$group}'\r\n";
 
             $account = (in_array($group, ['fcp', 'fl', 'ooh', 'sdce'])) ? 'acbm' : 'cygnus';
-            $dbName = sprintf('oly_%s_%s', $account, $group);
-            $conName = 'doctrine_mongodb.odm.'.$conn.'_connection';
+            $dbName = sprintf('oly_%s_%s_events', $account, $group);
+            $collName = 'content';
 
-            $connection = $this->get($conName);
+            echo "Finding all Omeda customerIds in Olytics {$dbName}::{$collName} on {$conName}\r\n";
 
-            foreach ($this->quarters as $quarter) {
-                $collName = sprintf('session.%s', $quarter);
-                echo "Reading session data from Olytics {$dbName}::{$collName} on {$conName}\r\n";
+            $builder = new Builder($connection->selectCollection($dbName, $collName));
+            $cursor = $builder
+                ->find()
+                ->field('session.customerId')->type(2)
+                ->where('this.session.customerId.length == 15')
+                ->select('session.customerId')
+                ->exclude('_id')
+                ->getQuery()
+                ->execute();
+            ;
 
-                $builder = new Builder($connection->selectCollection($dbName, $collName));
-                $cursor = $builder
-                    ->find()
-                    ->field('userId')->exists(true)
-                    ->select(['userId', 'sessionId'])
-                    ->exclude('_id')
-                    ->getQuery()
-                    ->execute()
-                ;
+            echo sprintf("Cursor generation complete. Found %s records with Omeda customer ids.\r\n", number_format($cursor->count(true)));
 
-                echo sprintf("Cursor generation complete. Found %s sessions with user ids.\r\n", number_format($cursor->count()));
-
-                $page = count($cursor) / 100;
-
-                $contentColl = sprintf('event.content.%s', $quarter);
-                echo sprintf('Updating events in %s::%s - Each \'.\' represents ~%s user ids'."\r\n", $dbName, $contentColl, $page);
-                echo str_repeat('-', 100) . "\r\n";
-
-                $collection = $connection->selectCollection($dbName, $contentColl)->getMongoCollection();
-
-                $processed = 0;
-                $percentage = 0;
-                $periods = 0;
-                $skipped = 0;
-                $upserted = 0;
-
-                foreach ($cursor as $session) {
-
-                    $criteria = [
-                        'sessionId' => $session['sessionId'],
-                    ];
-
-                    $newObj = [
-                        '$set'  => [
-                            'userId'    => $session['userId'],
-                        ]
-                    ];
-
-                    $options = [
-                        'multiple'  => true,
-                    ];
-
-                    $processed++;
-                    $increment = 1 / $page;
-                    $floored = floor($increment);
-                    $percentage += $increment;
-
-                    try {
-                        $collection->update($criteria, $newObj, $options);
-                        $upserted++;
-                    } catch (\Exception $e) {
-                        echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
-                        die();
-                    }
-
-                    if ($floored > 0) {
-                        $periods += $floored;
-                        echo str_repeat('.', $floored);
-                    } else if (floor($percentage) > 0) {
-                        $periods += floor($percentage);
-                        echo str_repeat('.', floor($percentage));
-                        $percentage = 0;
-                    }
-                }
-
-                if ($periods < 100) {
-                    echo str_repeat('.', 100 - $periods);
-                }
-                echo "\r\n";
-                echo str_repeat('-', 100);
-
+            $omedaIds = [];
+            foreach ($cursor as $doc) {
+                $omedaId = $doc['session']['customerId'];
+                $omedaIds[$omedaId] = true;
             }
+
+            echo sprintf('Omeda customer ids consolidated. Found %s distinct Omeda customer ids.'."\r\n", number_format(count($omedaIds)));
+
+            echo "Querying Merrick users with these Omeda customer ids.\r\n";
+
+            $builder = new Builder($this->getUserCollection());
+
+            $cursor = $builder
+                ->find()
+                ->field('site')->equals($this->sites[$group])
+                ->field('omeda_encrypted_id')->in(array_keys($omedaIds))
+                ->select('_id', 'omeda_encrypted_id')
+                ->getQuery()
+                ->execute()
+            ;
+
+            $page = count($cursor) / 100;
+
+            echo sprintf("Cursor generation complete. Found %s Merrick user ids.\r\n", number_format(count($cursor)));
+            echo sprintf('Updating events in %s::%s - Each \'.\' represents ~%s user ids'."\r\n", $dbName, $collName, $page);
+            echo str_repeat('-', 100) . "\r\n";
+
+            $collection = $connection->selectCollection($dbName, $collName)->getMongoCollection();
+
+            $processed = 0;
+            $percentage = 0;
+            $periods = 0;
+            $skipped = 0;
+            $upserted = 0;
+
+            foreach ($cursor as $doc) {
+                // unset so we can handle diff
+                $omedaId = $doc['omeda_encrypted_id'];
+                if (isset($omedaIds[$omedaId])) {
+                    unset($omedaIds[$omedaId]);
+                }
+
+                $criteria = [
+                    'session.customerId' => $omedaId,
+                ];
+
+                $newObj = [
+                    '$set'  => [
+                        'session.customerId' => $doc['_id'],
+                    ],
+                ];
+
+                $processed++;
+                $increment = 1 / $page;
+                $floored = floor($increment);
+                $percentage += $increment;
+
+                try {
+                    $collection->update($criteria, $newObj, ['multiple' => true]);
+                    $upserted++;
+                } catch (\Exception $e) {
+                    echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
+                    die();
+                }
+
+                if ($floored > 0) {
+                    $periods += $floored;
+                    echo str_repeat('.', $floored);
+                } else if (floor($percentage) > 0) {
+                    $periods += floor($percentage);
+                    echo str_repeat('.', floor($percentage));
+                    $percentage = 0;
+                }
+            }
+
+            if ($periods < 100) {
+                echo str_repeat('.', 100 - $periods);
+            }
+            echo "\r\n";
+            echo str_repeat('-', 100)."\r\n";
+
+            echo sprintf('An additional %s Omeda customer ids were found that were invalid. Unsetting.'."\r\n", count($omedaIds));
+
+            if (!empty($omedaIds)) {
+                $criteria = ['session.customerId' => ['$in' => array_keys($omedaIds)]];
+                $newObj = ['$set' => ['session.customerId' => null]];
+                try {
+                    $collection->update($criteria, $newObj, ['multiple' => true]);
+                } catch (\Exception $e) {
+                    echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
+                    die();
+                }
+            }
+
+            $time = round(microtime(true) - $start, 3);
+            $recsPerSec = round($upserted / $time, 2);
+            echo str_repeat('-', 100)."\r\n";
+            echo sprintf('Upsert complete for %s. Took %ss for %s ids/sec %s'."\r\n\r\n", $group, $time, $recsPerSec, $this->getMemoryUsage());
+
+            unset($omedaIds);
+            unset($cursor);
+
+            $start = microtime(true);
+
+            echo "Finding all string Mongo customerIds in Olytics {$dbName}::{$collName} on {$conName}\r\n";
+
+            $builder = new Builder($connection->selectCollection($dbName, $collName));
+            $cursor = $builder
+                ->find()
+                ->field('session.customerId')->type(2)
+                ->where('this.session.customerId.length == 24')
+                ->select('session.customerId')
+                ->exclude('_id')
+                ->getQuery()
+                ->execute();
+            ;
+
+            echo sprintf("Cursor generation complete. Found %s string Mongo ids.\r\n", number_format(count($cursor)));
+
+            $stringIds = [];
+            foreach ($cursor as $doc) {
+                $id = $doc['session']['customerId'];
+                $stringIds[$id] = true;
+            }
+
+            echo sprintf('String Mongo customer ids consolidated. Found %s distinct Mongo customer ids.'."\r\n", number_format(count($stringIds)));
+
+            $page = count($stringIds) / 100;
+
+            echo sprintf('Updating events in %s::%s - Each \'.\' represents ~%s user ids'."\r\n", $dbName, $collName, $page);
+            echo str_repeat('-', 100) . "\r\n";
+
+            $processed = 0;
+            $percentage = 0;
+            $periods = 0;
+            $skipped = 0;
+            $upserted = 0;
+
+            $invalid = [];
+            foreach ($stringIds as $customerId => $set) {
+
+                try {
+                    $mongoId = new \MongoId($customerId);
+                } catch (\Exception $e) {
+                    $invalid[$customerId] = true;
+                    continue;
+                }
+
+                $criteria = [
+                    'session.customerId' => $customerId,
+                ];
+
+                $newObj = [
+                    '$set'  => [
+                        'session.customerId' => $mongoId,
+                    ],
+                ];
+
+                $processed++;
+                $increment = 1 / $page;
+                $floored = floor($increment);
+                $percentage += $increment;
+
+                try {
+                    $collection->update($criteria, $newObj, ['multiple' => true]);
+                    $upserted++;
+                } catch (\Exception $e) {
+                    echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
+                    die();
+                }
+
+                if ($floored > 0) {
+                    $periods += $floored;
+                    echo str_repeat('.', $floored);
+                } else if (floor($percentage) > 0) {
+                    $periods += floor($percentage);
+                    echo str_repeat('.', floor($percentage));
+                    $percentage = 0;
+                }
+            }
+
+            if ($periods < 100) {
+                echo str_repeat('.', 100 - $periods);
+            }
+            echo "\r\n";
+            echo str_repeat('-', 100)."\r\n";
+
+            echo sprintf('An additional %s string Mongo ids were found that were invalid. Unsetting.'."\r\n", count($invalid));
+
+            if (!empty($invalid)) {
+                $criteria = ['session.customerId' => ['$in' => array_keys($invalid)]];
+                $newObj = ['$set' => ['session.customerId' => null]];
+                try {
+                    $collection->update($criteria, $newObj, ['multiple' => true]);
+                } catch (\Exception $e) {
+                    echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
+                    die();
+                }
+            }
+            unset($stringIds);
+            unset($invalid);
+
+            $time = round(microtime(true) - $start, 3);
+            $recsPerSec = round($upserted / $time, 2);
+            echo str_repeat('-', 100)."\r\n";
+            echo sprintf('Upsert complete for %s. Took %ss for %s ids/sec %s'."\r\n\r\n", $group, $time, $recsPerSec, $this->getMemoryUsage());
         }
         die();
     }

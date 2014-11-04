@@ -196,7 +196,7 @@ class ConversionController extends Controller
 
         $groups = $this->getGroups();
 
-        $conName = 'doctrine_mongodb.odm.db9_connection';
+        $conName = 'doctrine_mongodb.odm.olytics_connection';
         $connection = $this->get($conName);
 
         foreach ($groups as $group) {

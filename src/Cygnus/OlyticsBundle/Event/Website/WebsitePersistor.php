@@ -85,12 +85,15 @@ class WebsitePersistor extends Persistor
     /**
      * Persists the Event to the database
      *
-     * @todo   This should dispatch an event once completed that the aggregations can hook into. For now just run manually.
+     * @todo   This should dispatch an event once completed that the aggregations and event modification hooks can listen for. For now just run manually.
      * @param  WebsiteEvent   $event
      * @return void
      */
     protected function persistEvent(WebsiteEvent $event)
     {
+        // Execute event modification hooks
+        $event = $this->getEventHookManager()->executeAll($event, $this->account, $this->product);
+
         $indexes = $this->getIndexManager()->indexFactoryMulti($this->getEventIndexes());
         $this->getIndexManager()->createIndexes($indexes, $this->getDatabaseName(), $this->getEventCollection($event->getEntity()));
 

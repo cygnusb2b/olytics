@@ -5,6 +5,7 @@ namespace Cygnus\OlyticsBundle;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Cygnus\OlyticsBundle\DependencyInjection\Compiler\AggregationCompilerPass;
+use Cygnus\OlyticsBundle\DependencyInjection\Compiler\EventHookCompilerPass;
 
 class CygnusOlyticsBundle extends Bundle
 {
@@ -14,5 +15,8 @@ class CygnusOlyticsBundle extends Bundle
 
         // Register aggregations
         $container->addCompilerPass(new AggregationCompilerPass());
+
+        // Register event hooks
+        $container->addCompilerPass(new EventHookCompilerPass());
     }
 }

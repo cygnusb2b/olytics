@@ -3,6 +3,7 @@ namespace Cygnus\OlyticsBundle\Model\Event;
 
 use Cygnus\OlyticsBundle\Model\Metadata\Entity;
 use Cygnus\OlyticsBundle\Model\Session\WebsiteSession;
+use Cygnus\OlyticsBundle\Model\Exception\InvalidEventException;
 
 class WebsiteEvent extends AbstractEvent
 {
@@ -15,13 +16,13 @@ class WebsiteEvent extends AbstractEvent
 
     public function isValid()
     {
-        $parentValid = AbstractEvent::isValid();
+        AbstractEvent::isValid();
 
-        if ($parentValid && !empty($this->session)) {
-            return ($this->session->isValid());
-        } else {
-            return false;
+        if (!$this->session instanceof WebsiteSession) {
+            throw InvalidEventException::invalidSession($this->session, 'Cygnus\OlyticsBundle\Model\Session\WebsiteSession');
         }
+
+        return $this->session->isValid();
     }
 
     /**

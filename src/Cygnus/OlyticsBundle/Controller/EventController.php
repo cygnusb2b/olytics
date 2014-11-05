@@ -5,6 +5,8 @@ namespace Cygnus\OlyticsBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
+use Cygnus\OlyticsBundle\Model\Exception\InvalidModelException;
+use \Exception;
 
 class EventController extends Controller
 {
@@ -36,7 +38,7 @@ class EventController extends Controller
             // Do logging or storage of bot data here
 
             // Return response
-            $responseBody = array('created' => false, 'reason' => 'robot');
+            $responseBody = ['created' => false, 'reason' => 'robot'];
             return $this->handleResponse($request, 202, $responseBody);
         }
 
@@ -49,16 +51,37 @@ class EventController extends Controller
             // Persist to the DB
             $requestManager->persist();
 
-            $responseBody = array('created' => true);
+            $responseBody = ['created' => true];
             $responseCode = 201;
+        } catch (InvalidModelException $e) {
+            $responseBody = ['created' => false, 'reason' => 'invalid'];
+            $responseCode = 400;
+            $this->notifyError($e, $request, $account, $product);
         } catch (Exception $e) {
-            $responseBody = array('created' => false, 'reason'  => 'exception');
+            $responseBody = ['created' => false, 'reason'  => 'exception'];
             $responseCode = 500;
+            $this->notifyError($e, $request, $account, $product);
         }
         // Return response
         return $this->handleResponse($request, $responseCode, $responseBody);
 
 
+    }
+
+    public function notifyError(Exception $e, Request $request, $accountKey, $groupKey)
+    {
+        if (extension_loaded('newrelic')) {
+
+            $requestManager = $this->get('cygnus_olytics.events.website.request_manager');
+            $eventRequest = $requestManager->createRequestFromFactory($request, $accountKey, $groupKey);
+
+            newrelic_add_custom_parameter('accountKey', $accountKey);
+            newrelic_add_custom_parameter('groupKey', $groupKey);
+            newrelic_add_custom_parameter('exceptionClass', get_class($e));
+            newrelic_add_custom_parameter('eventRequest', serialize($eventRequest));
+            newrelic_notice_error($e->getMessage());
+        }
+        return $this;
     }
 
     public function handleResponse(Request $request, $responseCode = 200, array $responseBody = array())

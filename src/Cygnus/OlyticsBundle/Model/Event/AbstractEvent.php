@@ -4,6 +4,7 @@ namespace Cygnus\OlyticsBundle\Model\Event;
 use Cygnus\OlyticsBundle\Model\Metadata\Entity;
 use Cygnus\OlyticsBundle\Types\DateType;
 use \DateTime;
+use Cygnus\OlyticsBundle\Model\Exception\InvalidEventException;
 
 abstract class AbstractEvent implements EventInterface
 {
@@ -45,11 +46,15 @@ abstract class AbstractEvent implements EventInterface
 
     public function isValid()
     {
-        if (!empty($this->entity)) {
-            return (!empty($this->action) && $this->entity->isValid());
-        } else {
-            return false;
+        if (!$this->entity instanceof Entity) {
+            throw InvalidEventException::invalidEntity($this->entity, 'Cygnus\OlyticsBundle\Model\Metadata\Entity');
         }
+
+        if (empty($this->action)) {
+            throw InvalidEventException::missingAction($this->action);
+        }
+
+        return $this->entity->isValid();
     }
 
 

@@ -2,6 +2,7 @@
 namespace Cygnus\OlyticsBundle\Model\Session;
 
 use Cygnus\OlyticsBundle\Types\UUIDType;
+use Cygnus\OlyticsBundle\Model\Exception\InvalidSessionException;
 
 class WebsiteSession extends AbstractSession
 {
@@ -49,7 +50,13 @@ class WebsiteSession extends AbstractSession
 
     public function isValid()
     {
-        return (!empty($this->id) && !empty($this->visitorId));
+        if (empty($this->id)) {
+            throw InvalidSessionException::missingId($this->id);
+        }
+        if (empty($this->visitorId)) {
+            throw InvalidSessionException::missingVisitorId($this->visitorId);
+        }
+        return true;
     }
 
     /**

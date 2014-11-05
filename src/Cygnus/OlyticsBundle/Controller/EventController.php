@@ -78,7 +78,7 @@ class EventController extends Controller
             newrelic_add_custom_parameter('accountKey', $accountKey);
             newrelic_add_custom_parameter('groupKey', $groupKey);
             newrelic_add_custom_parameter('exceptionClass', get_class($e));
-            newrelic_add_custom_parameter('request', serialize($request));
+            newrelic_add_custom_parameter('eventRequest', serialize($eventRequest));
             newrelic_notice_error($e->getMessage());
         }
         return $this;

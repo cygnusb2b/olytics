@@ -37,9 +37,7 @@ class OpenXUserAggregation extends AbstractAggregation
         // Create the indexes for the collection (if they don't exist)
         $this->createIndexes($dbName, $collName);
 
-        // Format the user id and month for Mongo
-        $customerId = $event->getSession()->getCustomerId();
-        $userId = ($customerId instanceof \MongoId) ? $customerId : new \MongoId($customerId);
+        // Format the month for Mongo
         $start  = new \MongoDate(strtotime($event->getCreatedAt()->format('Y-m-01 00:00:00')));
 
         // Create the initial query builder that will handle the data upsert/aggregation
@@ -49,7 +47,7 @@ class OpenXUserAggregation extends AbstractAggregation
             ->field('start')->equals($start)
             ->field('action')->equals($event->getAction())
             ->field('adId')->equals($event->getEntity()->getClientId())
-            ->field('userId')->equals($userId)
+            ->field('userId')->equals($event->getSession()->getCustomerId())
         ;
 
         // Define the object to send to MongoDB
@@ -58,7 +56,7 @@ class OpenXUserAggregation extends AbstractAggregation
                 'start'         => $start,
                 'action'        => $event->getAction(),
                 'adId'          => $event->getEntity()->getClientId(),
-                'userId'        => $userId,
+                'userId'        => $event->getSession()->getCustomerId(),
             ],
             '$set'          => [
                 'lastInsert'    => new \MongoDate($event->getCreatedAt()->getTimestamp()),
@@ -100,19 +98,6 @@ class OpenXUserAggregation extends AbstractAggregation
         $customerId = $event->getSession()->getCustomerId();
         if (empty($customerId)) {
             // No customer id on the event (anonymous)
-            return false;
-        }
-
-        if ($customerId instanceof \MongoId) {
-            return true;
-        }
-
-        try {
-            // Valid MongoId
-            $customerId = new \MongoId($customerId);
-            return true;
-        } catch (\Exception $e) {
-            // Invalid MongoId
             return false;
         }
     }

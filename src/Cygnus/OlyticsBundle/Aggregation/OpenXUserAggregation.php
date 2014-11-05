@@ -39,7 +39,7 @@ class OpenXUserAggregation extends AbstractAggregation
 
         // Format the user id and month for Mongo
         $customerId = $event->getSession()->getCustomerId();
-        $userId = ($customer instanceof \MongoId) ? $customerId : new \MongoId($customerId);
+        $userId = ($customerId instanceof \MongoId) ? $customerId : new \MongoId($customerId);
         $start  = new \MongoDate(strtotime($event->getCreatedAt()->format('Y-m-01 00:00:00')));
 
         // Create the initial query builder that will handle the data upsert/aggregation

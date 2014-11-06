@@ -1,7 +1,6 @@
 <?php
-namespace Cygnus\OlyticsBundle\Model\Metadata;
 
-use Cygnus\OlyticsBundle\Model\Exception\InvalidEntityException;
+namespace Cygnus\OlyticsBundle\Model\Metadata;
 
 abstract class AbstractEntity
 {
@@ -18,19 +17,6 @@ abstract class AbstractEntity
      * @var mixed
      */
     protected $clientId;
-
-
-    public function isValid()
-    {
-        if (empty($this->type)) {
-            throw InvalidEntityException::missingType($this->type);
-        }
-
-        if (empty($this->clientId)) {
-            throw InvalidEntityException::missingClientId($this->clientId);
-        }
-        return true;
-    }
 
     /**
      * Set type

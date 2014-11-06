@@ -5,7 +5,8 @@ namespace Cygnus\OlyticsBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
-use Cygnus\OlyticsBundle\Model\Exception\InvalidModelException;
+use Cygnus\OlyticsBundle\Exception\JsonMessagedInterface;
+use Cygnus\OlyticsBundle\Event\Validator;
 use \Exception;
 
 class EventController extends Controller
@@ -53,35 +54,22 @@ class EventController extends Controller
 
             $responseBody = ['created' => true];
             $responseCode = 201;
-        } catch (InvalidModelException $e) {
-            $responseBody = ['created' => false, 'reason' => 'invalid'];
-            $responseCode = 400;
-            $this->notifyError($e, $request, $account, $product);
+
+        } catch (JsonMessagedInterface $e) {
+
+            $responseBody = $e->getResponseBody();
+            $responseCode = $e->getResponseCode();
+            Validator::notifyError($e, $account, $product);
+
         } catch (Exception $e) {
+
             $responseBody = ['created' => false, 'reason'  => 'exception'];
             $responseCode = 500;
-            $this->notifyError($e, $request, $account, $product);
+            Validator::notifyError($e, $account, $product);
+
         }
         // Return response
         return $this->handleResponse($request, $responseCode, $responseBody);
-
-
-    }
-
-    public function notifyError(Exception $e, Request $request, $accountKey, $groupKey)
-    {
-        if (extension_loaded('newrelic')) {
-
-            $requestManager = $this->get('cygnus_olytics.events.website.request_manager');
-            $eventRequest = $requestManager->createRequestFromFactory($request, $accountKey, $groupKey);
-
-            newrelic_add_custom_parameter('accountKey', $accountKey);
-            newrelic_add_custom_parameter('groupKey', $groupKey);
-            // newrelic_add_custom_parameter('exceptionClass', get_class($e));
-            // newrelic_add_custom_parameter('eventRequest', serialize($eventRequest));
-            newrelic_notice_error($e->getMessage(), $e);
-        }
-        return $this;
     }
 
     public function handleResponse(Request $request, $responseCode = 200, array $responseBody = array())

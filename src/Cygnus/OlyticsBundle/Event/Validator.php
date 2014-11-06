@@ -68,10 +68,10 @@ class Validator implements ValidatorInterface
         if (extension_loaded('newrelic')) {
             newrelic_add_custom_parameter('accountKey', $accountKey);
             newrelic_add_custom_parameter('groupKey', $groupKey);
-            newrelic_add_custom_parameter('request.method', $r->getMethod());
-            newrelic_add_custom_parameter('request.content', $r->getContent());
-            newrelic_add_custom_parameter('request.contentType', $r->headers->get('Content-Type'));
-            newrelic_add_custom_parameter('request.formattedCt', $r->getContentType());
+            newrelic_add_custom_parameter('requestMethod', $r->getMethod());
+            newrelic_add_custom_parameter('requestContent', $r->getContent());
+            newrelic_add_custom_parameter('requestContentType', $r->headers->get('Content-Type'));
+            newrelic_add_custom_parameter('requestFormattedCt', $r->getContentType());
 
             if ($e instanceof InvalidModelException) {
                 newrelic_add_custom_parameter('eventObject', serialize($e->getEvent()));

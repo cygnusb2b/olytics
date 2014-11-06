@@ -48,17 +48,6 @@ class WebsiteSession extends AbstractSession
      */
     protected $ua;
 
-    public function isValid()
-    {
-        if (empty($this->id)) {
-            throw InvalidSessionException::missingId($this->id);
-        }
-        if (empty($this->visitorId)) {
-            throw InvalidSessionException::missingVisitorId($this->visitorId);
-        }
-        return true;
-    }
-
     /**
      * Set visitorId
      *

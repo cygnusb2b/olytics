@@ -12,6 +12,7 @@ use \MongoBinData;
 use \MongoDate;
 use \RuntimeException;
 use \DateTime;
+use Cygnus\OlyticsBundle\Exception\Model\InvalidModelException;
 
 class WebsitePersistor extends Persistor
 {
@@ -40,13 +41,16 @@ class WebsitePersistor extends Persistor
      * @return void
      * @todo   Need to determine how to store relatedEntities on the event directly...
      */
-    public function persist(EventInterface $event, array $relatedEntities, $account, $product, $appendCustomer = false) {
-
+    public function persist(EventInterface $event, array $relatedEntities, $account, $product, $appendCustomer = false)
+    {
         $this->account = strtolower($account);
         $this->product = strtolower($product);
 
         // Ensure account and product exists
         $this->validateProduct();
+
+        // Validate the event
+        $this->getEventValidator()->validate($event);
 
         // Persist to DB
         $this->persistEvent($event);

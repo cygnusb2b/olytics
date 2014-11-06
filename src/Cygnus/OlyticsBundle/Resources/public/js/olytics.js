@@ -3,7 +3,7 @@ if (typeof _olytics !== 'object')  {
 }
 
 if (typeof Olytics !== 'object') {
-    
+
     Olytics = (function() {
         if (typeof console === "undefined" || typeof console.log === "undefined") {
             console = {};
@@ -12,7 +12,7 @@ if (typeof Olytics !== 'object') {
 
         if (typeof String.prototype.trim !== 'function') {
             String.prototype.trim = function() {
-                return this.replace(/^\s+|\s+$/g, ''); 
+                return this.replace(/^\s+|\s+$/g, '');
             }
         }
 
@@ -183,33 +183,33 @@ if (typeof Olytics !== 'object') {
 
         }
 
-        function isObject(property) 
+        function isObject(property)
         {
             return typeof property === 'object';
         }
 
-        function isArray(obj) 
+        function isArray(obj)
         {
             return Object.prototype.toString.call(obj) === '[object Array]';
         }
 
-        function isFunction(property) 
+        function isFunction(property)
         {
             return typeof property === 'function';
         }
 
-        function isDefined(property) 
+        function isDefined(property)
         {
             var propertyType = typeof property;
             return propertyType !== 'undefined';
         }
 
-        function isString(property) 
+        function isString(property)
         {
             return typeof property === 'string' || property instanceof String;
         }
 
-        function getReferrer() 
+        function getReferrer()
         {
             var referrer = '';
             try {
@@ -229,14 +229,14 @@ if (typeof Olytics !== 'object') {
             return referrer;
         }
 
-        function getProtocolScheme(url) 
+        function getProtocolScheme(url)
         {
             var e = new RegExp('^([a-z]+):'),
             matches = e.exec(url);
             return matches ? matches[1] : null;
         }
 
-        function getHostName(url) 
+        function getHostName(url)
         {
             // scheme : // [username [: password] @] hostame [: port] [/ [path] [? query] [# fragment]]
             var e = new RegExp('^(?:(?:https?|ftp):)/*(?:[^@]+@)?([^:/#]+)'),
@@ -244,21 +244,21 @@ if (typeof Olytics !== 'object') {
             return matches ? matches[1] : url;
         }
 
-        function getRootDomain(url) 
+        function getRootDomain(url)
         {
             var parser = documentAlias.createElement('a');
             parser.href = url;
             return parser.hostname;
         }
 
-        function getPathname(url) 
+        function getPathname(url)
         {
             var parser = documentAlias.createElement('a');
             parser.href = url;
             return parser.pathname;
         }
 
-        function getParameter(url, name) 
+        function getParameter(url, name)
         {
             var regexSearch = "[\\?&#]" + name + "=([^&#]*)";
             var regex = new RegExp(regexSearch);
@@ -266,7 +266,7 @@ if (typeof Olytics !== 'object') {
             return results ? decodeWrapper(results[1]) : '';
         }
 
-        function cleanDomainName(domain) 
+        function cleanDomainName(domain)
         {
             var dl = domain.length;
 
@@ -281,7 +281,7 @@ if (typeof Olytics !== 'object') {
             return domain;
         }
 
-        function cleanTitle(title) 
+        function cleanTitle(title)
         {
             title = title && title.text ? title.text : title;
             if (!isString(title)) {
@@ -298,7 +298,7 @@ if (typeof Olytics !== 'object') {
             return Math.floor(Math.random() * 9999999999) + ""
         }
 
-        function apply() 
+        function apply()
         {
             var i, f, parameterArray;
             for (i = 0; i < arguments.length; i += 1)  {
@@ -494,7 +494,7 @@ if (typeof Olytics !== 'object') {
 
         function Request(trackerObject, primaryUrl)
         {
-            var 
+            var
                 requestType = detectRequestSupport(),
                 request = {
                     xhr: function(method, url, body) {
@@ -506,7 +506,13 @@ if (typeof Olytics !== 'object') {
                     xdr: function(method, url, body) {
                         var xdr = new XDomainRequest();
                         xdr.open(method, url);
-                        xdr.send(body);
+
+                        xdr.onprogress = function() { };
+                        xdr.ontimeout = function() { };
+                        xdr.onerror = function () { };
+                        setTimeout(function() {
+                            xdr.send(body);
+                        }, 0);
                     },
                     jsonp: function(url) {
                         var callback = 'Olytics_' + rand();
@@ -515,7 +521,7 @@ if (typeof Olytics !== 'object') {
                         } else {
                             url += '?callback=' + callback;
                         }
-                        
+
                         var s = documentAlias.createElement('script');
                         s.type = 'text/javascript';
                         s.src = url;
@@ -547,7 +553,7 @@ if (typeof Olytics !== 'object') {
                     default:
                         break;
                 }
-            }            
+            }
 
             function detectRequestSupport()
             {
@@ -638,7 +644,7 @@ if (typeof Olytics !== 'object') {
                     },
                     envWindowSize: function() {
                         var pixelRatio = (new RegExp('Mac OS X.*Safari/')).test(navigatorAlias.userAgent) ? windowAlias.devicePixelRatio || 1 : 1;
-                        
+
                         var w = Math.max(documentAlias.documentElement.clientWidth, windowAlias.innerWidth || 0) * pixelRatio;
                         var h = Math.max(documentAlias.documentElement.clientHeight, windowAlias.innerHeight || 0) * pixelRatio;
 
@@ -776,11 +782,11 @@ if (typeof Olytics !== 'object') {
                     createNewVisitor();
                 } else {
                     var visitor = getCookie('visitor');
-                    
+
                     if (hasCustomerCookie()) {
                         var customer = getCookie('customer');
                         setCustomer(customer);
-                        
+
                         if (isDefined(visitor.customerId)) {
                             if (visitor.customerId == customer.id) {
                                 setVisitor(visitor);
@@ -936,16 +942,16 @@ if (typeof Olytics !== 'object') {
                     var d = new Date();
                     d.setTime(d.getTime() + (config.cookie[ctype].expires * 60 * 1000));
 
-                    var 
+                    var
                         key = config.cookie[ctype].key,
                         value = JSON.stringify(value),
                         expires = '; expires=' + d.toGMTString(),
                         domain = '; domain=' + config.domainName,
                         path = '; path=/';
-                        
+
                     if (value) {
                         // console.log('Setting cookie: ' + key);
-                        documentAlias.cookie = encodeWrapper(key) + '=' + encodeWrapper(value) + expires + domain + path;    
+                        documentAlias.cookie = encodeWrapper(key) + '=' + encodeWrapper(value) + expires + domain + path;
                     }
                 }
             }
@@ -994,7 +1000,7 @@ if (typeof Olytics !== 'object') {
             }
         }
 
-        function TrackerProxy() 
+        function TrackerProxy()
         {
             return { push: apply };
         }
@@ -1018,21 +1024,21 @@ if (typeof Olytics !== 'object') {
 
         _olytics = new TrackerProxy();
 
-        Olytics = 
+        Olytics =
         {
-            createTracker: function (endpoint) 
+            createTracker: function (endpoint)
             {
                 return new Tracker(endpoint);
             },
 
-            getAsyncTracker: function () 
+            getAsyncTracker: function ()
             {
                 return asyncTracker;
             }
         };
 
         // Expose Olytics as an AMD module
-        if (typeof define === 'function' && define.amd) 
+        if (typeof define === 'function' && define.amd)
         {
             define(['olytics'], [], function () { return Olytics; });
         }

@@ -9,7 +9,13 @@ use Cygnus\OlyticsBundle\Exception\Model\InvalidEntityException;
 
 class Validator implements ValidatorInterface
 {
-
+    /**
+     * Validates an EventInterface instance to ensure it is acceptable for database persistence
+     *
+     * @param  Cygnus\OlyticsBundle\Model\Event\EventInterface  $event
+     * @return bool
+     * @throws Cygnus\OlyticsBundle\Exception\Model\InvalidEventException
+     */
     public function validate(EventInterface $event)
     {
         $entity = $event->getEntity();
@@ -24,6 +30,13 @@ class Validator implements ValidatorInterface
         return $this->validateEntity($event);
     }
 
+    /**
+     * Validates the Entity of an EventInterface instance to ensure it is acceptable for database persistence
+     *
+     * @param  Cygnus\OlyticsBundle\Model\Event\EventInterface  $event
+     * @return bool
+     * @throws Cygnus\OlyticsBundle\Exception\Model\InvalidEntityException
+     */
     protected function validateEntity(EventInterface $event)
     {
         $entity     = $event->getEntity();
@@ -40,6 +53,15 @@ class Validator implements ValidatorInterface
         return true;
     }
 
+    /**
+     * Notifies New Relic of an Exception
+     *
+     * @static
+     * @param  \Exception   $e
+     * @param  string       $accountKey
+     * @param  string       $groupKey
+     * @return void
+     */
     public static function notifyError(\Exception $e, $accountKey, $groupKey)
     {
         if (extension_loaded('newrelic')) {

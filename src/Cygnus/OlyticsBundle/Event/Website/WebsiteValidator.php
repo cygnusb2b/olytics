@@ -11,6 +11,13 @@ use Cygnus\OlyticsBundle\Exception\Model\InvalidSessionException;
 
 class WebsiteValidator extends Validator
 {
+    /**
+     * Validates an EventInterface instance to ensure it is acceptable for database persistence
+     *
+     * @param  Cygnus\OlyticsBundle\Model\Event\EventInterface  $event
+     * @return bool
+     * @throws Cygnus\OlyticsBundle\Exception\Model\InvalidEventException
+     */
     public function validate(EventInterface $event)
     {
         if (!$event instanceof WebsiteEvent) {
@@ -26,6 +33,13 @@ class WebsiteValidator extends Validator
         return $this->validateSession($event);
     }
 
+    /**
+     * Validates the Session of an EventInterface instance to ensure it is acceptable for database persistence
+     *
+     * @param  Cygnus\OlyticsBundle\Model\Event\EventInterface  $event
+     * @return bool
+     * @throws Cygnus\OlyticsBundle\Exception\Model\InvalidSessionException
+     */
     protected function validateSession(EventInterface $event)
     {
         $session = $event->getSession();

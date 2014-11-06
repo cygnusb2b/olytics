@@ -106,9 +106,7 @@ abstract class AbstractEvent implements EventInterface
      */
     public function addRelatedEntity(Entity $relatedEntity)
     {
-        if ($relatedEntity->isValid()) {
-            $this->relatedEntities[] = $relatedEntity;
-        }
+        $this->relatedEntities[] = $relatedEntity;
         return $this;
     }
 

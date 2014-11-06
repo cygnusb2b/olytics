@@ -146,9 +146,7 @@ class WebsiteRequestManager extends RequestManager
         if (is_array($relatedEntityData) && !empty($relatedEntityData)) {
             foreach ($relatedEntityData as $relatedEntity) {
                 $relEntityObj = $this->hydrateEntity($relatedEntity);
-                if ($relEntityObj->isValid()) {
-                    $this->event->addRelatedEntity($relEntityObj);
-                }
+                $this->event->addRelatedEntity($relEntityObj);
 
             }
         }
@@ -197,10 +195,8 @@ class WebsiteRequestManager extends RequestManager
         if (array_key_exists('relatedTo', $entityData) && is_array($entityData['relatedTo']) && !empty($entityData['relatedTo'])) {
             foreach ($entityData['relatedTo'] as $relatedEntityData) {
                 $relatedEntity = $this->hydrateRelatedEntity($relatedEntityData);
-                if ($relatedEntity->isValid()) {
-                    $entity->addRelatedTo($relatedEntity);
-                    $this->addRelatedEntity($this->hydrateEntity($relatedEntityData));
-                }
+                $entity->addRelatedTo($relatedEntity);
+                $this->addRelatedEntity($this->hydrateEntity($relatedEntityData));
             }
         }
 

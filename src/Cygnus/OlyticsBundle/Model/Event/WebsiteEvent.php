@@ -14,17 +14,6 @@ class WebsiteEvent extends AbstractEvent
      */
     protected $session;
 
-    public function isValid()
-    {
-        AbstractEvent::isValid();
-
-        if (!$this->session instanceof WebsiteSession) {
-            throw InvalidEventException::invalidSession($this->session, 'Cygnus\OlyticsBundle\Model\Session\WebsiteSession');
-        }
-
-        return $this->session->isValid();
-    }
-
     /**
      * Set session
      *

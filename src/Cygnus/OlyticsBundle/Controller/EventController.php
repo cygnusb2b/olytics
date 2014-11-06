@@ -59,13 +59,13 @@ class EventController extends Controller
 
             $responseBody = $e->getResponseBody();
             $responseCode = $e->getResponseCode();
-            Validator::notifyError($e, $account, $product);
+            Validator::notifyError($request, $e, $account, $product);
 
         } catch (Exception $e) {
 
             $responseBody = ['created' => false, 'reason'  => 'exception'];
             $responseCode = 500;
-            Validator::notifyError($e, $account, $product);
+            Validator::notifyError($request, $e, $account, $product);
 
         }
         // Return response

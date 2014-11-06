@@ -548,7 +548,7 @@ if (typeof Olytics !== 'object') {
                         break;
                     case 'jsonp':
                         var encoded = encodeWrapper(Base64.encode(JSON.stringify(trackerObject)));
-                        var url = primaryUrl + '&enc=' + encoded;
+                        var url = primaryUrl + '?enc=' + encoded;
                         request.jsonp(url);
                     default:
                         break;

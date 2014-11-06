@@ -60,7 +60,7 @@ class MongoUserIdHook implements HookInterface
 
         if (15 === strlen($customerId)) {
             // Omeda encrypted customer id
-            return $this->setCustomerIdFromOmedaId($event, $customerId, $accountKey, $groupKey);
+            return $this-> setCustomerIdFromOmedaId($event, $customerId, $accountKey, $groupKey);
         }
 
         // Unknown or invalid. Set null

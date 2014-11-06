@@ -3,7 +3,6 @@ parameters:
     cygnus_olytics.events.website.request_factory.class: Cygnus\OlyticsBundle\Event\Website\WebsiteRequestFactory
     cygnus_olytics.events.website.request_manager.class: Cygnus\OlyticsBundle\Event\Website\WebsiteRequestManager
     cygnus_olytics.events.website.persistor.class: Cygnus\OlyticsBundle\Event\Website\WebsitePersistor
-    cygnus_olytics.events.website.validator.class: Cygnus\OlyticsBundle\Event\Website\WebsiteValidator
     cygnus_olytics.bot_detector.class: Cygnus\OlyticsBundle\Detector\BotDetector
     cygnus_olytics.aggregation_manager.class: Cygnus\OlyticsBundle\Aggregation\Manager
     cygnus_olytics.aggregation.abstract.class: Cygnus\OlyticsBundle\Aggregation\AbstractAggregation
@@ -21,9 +20,6 @@ services:
     cygnus_olytics.data_formatter.generic:
         class: %cygnus_olytics.data_formatter.generic.class%
 
-    cygnus_olytics.events.website.validator:
-        class: %cygnus_olytics.events.website.validator.class%
-
     cygnus_olytics.events.website.persistor:
         class: %cygnus_olytics.events.website.persistor.class%
         arguments:
@@ -31,7 +27,6 @@ services:
             - @cygnus_olytics.index_manager
             - @cygnus_olytics.aggregation_manager
             - @cygnus_olytics.event_hook_manager
-            - @cygnus_olytics.events.website.validator
             - %cygnus_olytics.accounts%
 
     cygnus_olytics.events.website.request_factory:

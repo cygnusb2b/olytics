@@ -19,21 +19,13 @@ abstract class Persistor implements PersistorInterface
 
     protected $hm;
 
-    protected $validator;
-
-    public function __construct(Connection $connection, IndexManager $indexManager, AggregationManager $am, EventHookManager $hm, ValidatorInterface $validator, array $accounts)
+    public function __construct(Connection $connection, IndexManager $indexManager, AggregationManager $am, EventHookManager $hm, array $accounts)
     {
         $this->connection = $connection;
         $this->indexManager = $indexManager;
         $this->accounts = $accounts;
         $this->am = $am;
         $this->hm = $hm;
-        $this->validator = $validator;
-    }
-
-    public function getEventValidator()
-    {
-        return $this->validator;
     }
 
     public function getAggregationManager()

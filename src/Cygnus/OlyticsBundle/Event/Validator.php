@@ -1,6 +1,7 @@
 <?php
 namespace Cygnus\OlyticsBundle\Event;
 
+use Symfony\Component\HttpFoundation\Request;
 use Cygnus\OlyticsBundle\Model\Event\EventInterface;
 use Cygnus\OlyticsBundle\Model\Metadata\Entity;
 use Cygnus\OlyticsBundle\Exception\Model\InvalidModelException;
@@ -62,11 +63,15 @@ class Validator implements ValidatorInterface
      * @param  string       $groupKey
      * @return void
      */
-    public static function notifyError(\Exception $e, $accountKey, $groupKey)
+    public static function notifyError(Request $r, \Exception $e, $accountKey, $groupKey)
     {
         if (extension_loaded('newrelic')) {
             newrelic_add_custom_parameter('accountKey', $accountKey);
             newrelic_add_custom_parameter('groupKey', $groupKey);
+            newrelic_add_custom_parameter('request.method', $r->getMethod());
+            newrelic_add_custom_parameter('request.content', $r->getContent());
+            newrelic_add_custom_parameter('request.contentType', $r->headers->get('Content-Type'));
+            newrelic_add_custom_parameter('request.formattedCt', $r->getContentType());
 
             if ($e instanceof InvalidModelException) {
                 newrelic_add_custom_parameter('eventObject', serialize($e->getEvent()));

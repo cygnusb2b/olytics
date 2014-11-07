@@ -135,9 +135,7 @@ class WebsiteRequestManager extends RequestManager
 
         // Format the action
         $action = $eventData->get('action');
-        if (empty($action)) {
-            $action = 'unknown';
-        }
+        $this->setDefaultAction($action);
 
         $this->event->setAction($action);
         $this->event->setEntity($this->eventEntity);
@@ -178,6 +176,20 @@ class WebsiteRequestManager extends RequestManager
             if (method_exists($this->session, $method)) {
                 $this->session->$method($value);
             }
+        }
+    }
+
+    /**
+     * Sets the default action
+     *
+     * @param  array  &$data
+     * @return void
+     */
+    protected function setDefaultAction(&$action)
+    {
+        $default = 'unknown';
+        if (empty($action)) {
+            $action = $default;
         }
     }
 

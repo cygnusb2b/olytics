@@ -51,6 +51,7 @@ class JsController extends Controller
         $response = new Response($content, 200, $headers);
         $response->setPublic();
         $response->setExpires($expires);
+        $response->setMaxAge(self::EXPIRES);
         $response->setSharedMaxAge(self::EXPIRES);
         $response->setLastModified($modified);
 

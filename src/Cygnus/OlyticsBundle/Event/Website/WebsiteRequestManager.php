@@ -130,10 +130,16 @@ class WebsiteRequestManager extends RequestManager
         // Hydrate the event entity
         $this->eventEntity = $this->hydrateEntity($entityData);
 
-
         // Create the event object
         $this->event = new WebsiteEvent();
-        $this->event->setAction($eventData->get('action'));
+
+        // Format the action
+        $action = $eventData->get('action');
+        if (empty($action)) {
+            $action = 'unknown';
+        }
+
+        $this->event->setAction($action);
         $this->event->setEntity($this->eventEntity);
         $this->event->setCreatedAt(time());
 
@@ -176,6 +182,22 @@ class WebsiteRequestManager extends RequestManager
     }
 
     /**
+     * Sets the default Entity clientId if it's not set
+     *
+     * @param  array  &$data
+     * @return void
+     */
+    protected function setDefaultClientId(array &$data)
+    {
+        $default = 'unknown';
+        if (!isset($data['clientId'])) {
+            $data['clientId'] = $default;
+        } elseif (empty($data['clientId'])) {
+            $data['clientId'] = $default;
+        }
+    }
+
+    /**
      * Hydrates an Entity object from an array of entity data
      *
      * @param  array  $entityData
@@ -183,6 +205,8 @@ class WebsiteRequestManager extends RequestManager
      */
     protected function hydrateEntity(array $entityData)
     {
+        $this->setDefaultClientId($entityData);
+
         $entity = new Entity();
         foreach ($entityData as $key => $value) {
             $method = 'set' . ucwords($key);
@@ -215,6 +239,8 @@ class WebsiteRequestManager extends RequestManager
      */
     protected function hydrateRelatedEntity(array $relatedEntityData)
     {
+        $this->setDefaultClientId($relatedEntityData);
+
         $relatedEntity = new RelatedEntity();
         foreach ($relatedEntityData as $key => $value) {
             $method = 'set' . ucwords($key);

@@ -12,6 +12,8 @@ class JsController extends Controller
 
     const RESOURCE_LOC = '@CygnusOlyticsBundle/Resources/public/js';
 
+    const EXPIRES = 7200;
+
     protected $files = ['uuid.js', 'json2.js', 'olytics.js'];
 
     public function indexAction()
@@ -36,6 +38,9 @@ class JsController extends Controller
         $modified = new DateTime();
         $modified->setTimestamp($lastModified);
 
+        $expires = new DateTime();
+        $expires->setTimestamp(time() + self::EXPIRES);
+
         $content = implode($js, "\r\n");
 
         $headers = array(
@@ -45,7 +50,8 @@ class JsController extends Controller
 
         $response = new Response($content, 200, $headers);
         $response->setPublic();
-        $response->setSharedMaxAge(60*60*24);
+        $response->setExpires($expires);
+        $response->setSharedMaxAge(self::EXPIRES);
         $response->setLastModified($modified);
 
         return $response;

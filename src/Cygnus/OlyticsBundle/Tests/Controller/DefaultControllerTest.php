@@ -48,7 +48,7 @@ class DefaultControllerTest extends WebTestCase
         $this->assertFalse($client->getResponse()->isSuccessful());
     }
 
-    public function testInvalidEventAction()
+    public function testEmptyEventAction()
     {
         $client = static::createClient();
 
@@ -56,10 +56,10 @@ class DefaultControllerTest extends WebTestCase
 
         $client->request('POST', '/events/test/test', [], [], ['CONTENT_TYPE' => 'application/json'], $content);
 
-        $this->assertFalse($client->getResponse()->isSuccessful());
+        $this->assertTrue($client->getResponse()->isSuccessful());
     }
 
-    public function testInvalidEntityClientId()
+    public function testEmptyEntityClientId()
     {
         $client = static::createClient();
 
@@ -67,6 +67,6 @@ class DefaultControllerTest extends WebTestCase
 
         $client->request('POST', '/events/test/test', [], [], ['CONTENT_TYPE' => 'application/json'], $content);
 
-        $this->assertFalse($client->getResponse()->isSuccessful());
+        $this->assertTrue($client->getResponse()->isSuccessful());
     }
 }

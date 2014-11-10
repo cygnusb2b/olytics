@@ -268,6 +268,7 @@ class ConversionController extends Controller
                 }
 
                 for ($i = 0; $i < $doc['visits']; $i++) {
+                    set_time_limit(10);
                     $sessionId = sprintf('legacy_backfill_%s', $i);
 
                     $criteria = [

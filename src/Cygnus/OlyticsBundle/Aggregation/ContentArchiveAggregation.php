@@ -243,12 +243,7 @@ class ContentArchiveAggregation extends AbstractAggregation
         if (empty($userId) || !$userId) {
             return null;
         }
-
-        try {
-            return new \MongoId($userId);
-        } catch (\Exception $e) {
-            return null;
-        }
+        return $userId;
     }
 
     /**

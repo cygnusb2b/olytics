@@ -129,9 +129,6 @@ class ConversionController extends Controller
 
             foreach ($cursor as $doc) {
 
-                var_dump($doc);
-                die();
-
                 set_time_limit(10);
 
                 $insert = [
@@ -370,6 +367,7 @@ class ConversionController extends Controller
     public function appendUserIdsToEventsAction()
     {
 
+        die('done');
         $this->init();
 
         $groups = $this->getGroups();

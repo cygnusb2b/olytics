@@ -81,7 +81,7 @@ class ContentArchiveAggregation extends AbstractAggregation
         $insert = [
             'month'     => $this->getMonthFromDate($event->getCreatedAt()),
             'contentId' => $event->getEntity()->getClientId(),
-            'sessionId' => $event->getSession()->getId(),
+            'sessionId' => $this->getMongoSessionId($event),
         ];
 
         $builder
@@ -123,6 +123,7 @@ class ContentArchiveAggregation extends AbstractAggregation
      */
     protected function handleTrafficArchive(EventInterface $event, $accountKey, $groupKey)
     {
+        return $this;
         // Get the database and collection names
         list($dbName, $collName) = $this->getArchiveDbInfo($accountKey, $groupKey);
 
@@ -151,7 +152,7 @@ class ContentArchiveAggregation extends AbstractAggregation
             ],
         ];
 
-        if (null !== ($visits = $this->getContentVisits($accountKey, $groupKey, $metadata))) {
+        if (0 !== ($visits = $this->getContentVisits($accountKey, $groupKey, $metadata))) {
             // Set the content visits
             $newObj['$set']['visits'] = $visits;
         }
@@ -187,17 +188,16 @@ class ContentArchiveAggregation extends AbstractAggregation
 
         if (isset($criteria['userId'])) {
             $builder->field('userId')->equals($criteria['userId']);
+        } else {
+            $builder->field('userId')->exists(false);
         }
 
-        $result = $builder
+        $cursor = $builder
             ->getQuery()
-            ->getSingleResult()
+            ->execute()
         ;
 
-        if (is_array($result) && isset($result['sessions'])) {
-            return count($result['sessions']);
-        }
-        return null;
+        return $cursor->count(true);
     }
 
     /**
@@ -247,6 +247,17 @@ class ContentArchiveAggregation extends AbstractAggregation
     }
 
     /**
+     * Obtains a session id in Mongo Binary format from the Event
+     *
+     * @param  Cygnus\OlyticsBundle\Model\Event\EventInterface  $event
+     * @return \MongoBinData
+     */
+    protected function getMongoSessionId(EventInterface $event)
+    {
+        return new \MongoBinData($event->getSession()->getId(), \MongoBinData::UUID);
+    }
+
+    /**
      * Returns a month object based on a date
      *
      * @param  \DateTime    $date   The date to retrieve the month from
@@ -275,7 +286,6 @@ class ContentArchiveAggregation extends AbstractAggregation
      */
     public function supports(EventInterface $event, $accountKey, $groupKey)
     {
-        return false;
         if (!$this->isEnabled($accountKey, $groupKey)) {
             return false;
         }

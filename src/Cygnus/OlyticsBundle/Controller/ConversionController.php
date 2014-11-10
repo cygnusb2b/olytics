@@ -49,6 +49,7 @@ class ConversionController extends Controller
 
     public function createSessionArchiveAction()
     {
+        die('done');
         $this->init();
 
         $groups = $this->getGroups();
@@ -191,9 +192,149 @@ class ConversionController extends Controller
         die();
     }
 
+    public function backfillSessionArchiveAction()
+    {
+        $this->init();
+
+        $groups = $this->getGroups();
+
+        $conName = 'doctrine_mongodb.odm.db9_connection';
+        $connection = $this->get($conName);
+
+        $sessionConName = 'doctrine_mongodb.odm.olytics_connection';
+        $sessionCon = $this->get($sessionConName);
+
+        foreach ($groups as $group) {
+            if (!in_array($group, $this->groups)) {
+                echo sprintf('Group "%s" not found as a valid group. Skipping.'."\r\n\r\n", $group);
+                continue;
+            }
+
+            $start = microtime(true);
+
+            $account = (in_array($group, ['fcp', 'fl', 'ooh', 'sdce'])) ? 'acbm' : 'cygnus';
+
+            echo "Backfilling session archive data for group '{$group}'\r\n";
+
+            $fromDb = 'content_traffic_archive';
+            $fromColl = sprintf('%s_%s', $account, $group);
+
+            $toDb = 'content_session_archive';
+            $toColl = sprintf('%s_%s', $account, $group);
+
+            $builder = new Builder($sessionCon->selectCollection($toDb, $toColl));
+            $result = $builder
+                ->find()
+                ->select('month')
+                ->exclude('_id')
+                ->sort(['lastAccessed' => 1])
+                ->limit(1)
+                ->getQuery()
+                ->getSingleResult()
+            ;
+
+            $ts = (null === $result) ? 0 : $result['month']->sec;
+
+            echo sprintf('Requesting all records for month %s from %s::%s on %s'."\r\n", date('Y-m-d H:i:s', $ts), $fromDb, $fromColl, $conName);
+
+            $builder = new Builder($connection->selectCollection($fromDb, $fromColl));
+            $cursor = $builder
+                ->find()
+                ->field('metadata.month')->equals(new \MongoDate($ts))
+                ->getQuery()
+                ->execute()
+            ;
+
+            $count = $cursor->count(true);
+            echo sprintf('Cursor generation complete. Found %s content archive records. Begin processing.'."\r\n", number_format($count));
+
+            $page = $count / 100;
+
+            echo sprintf('Updating session archive in %s::%s - Each \'.\' represents ~%s content archive records'."\r\n", $toDb, $toColl, $page);
+            echo str_repeat('-', 100) . "\r\n";
+
+            $processed = 0;
+            $percentage = 0;
+            $periods = 0;
+            $skipped = 0;
+            $upserted = 0;
+
+            $sessionCollection = $sessionCon->selectCollection($toDb, $toColl)->getMongoCollection();
+
+            foreach ($cursor as $doc) {
+
+                if (!isset($doc['visits'])) {
+                    $doc['visits'] = 1;
+                }
+
+                for ($i = 0; $i < $doc['visits']; $i++) {
+                    $sessionId = sprintf('legacy_backfill_%s', $i);
+
+                    $criteria = [
+                        'month'     => $doc['metadata']['month'],
+                        'contentId' => (int) $doc['metadata']['contentId'],
+                        'sessionId' => $sessionId,
+                    ];
+
+                    $newObj = [
+                        '$setOnInsert'  => $criteria,
+                    ];
+
+                    $newObj['$setOnInsert']['lastAccessed'] = $doc['lastAccessed'];
+
+                    if (isset($doc['metadata']['userId'])) {
+                        $criteria['userId'] = $doc['metadata']['userId'];
+                        $newObj['$setOnInsert']['userId'] = $criteria['userId'];
+
+                    } else {
+                        $criteria['userId'] = ['$exists' => false];
+                    }
+
+                    try {
+                        $sessionCollection->update($criteria, $newObj, ['upsert' => true]);
+                    } catch (\Exception $e) {
+                        echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
+                        die();
+                    }
+
+
+                }
+
+                $upserted++;
+
+                $processed++;
+                $increment = 1 / $page;
+                $floored = floor($increment);
+                $percentage += $increment;
+
+                if ($floored > 0) {
+                    $periods += $floored;
+                    echo str_repeat('.', $floored);
+                } else if (floor($percentage) > 0) {
+                    $periods += floor($percentage);
+                    echo str_repeat('.', floor($percentage));
+                    $percentage = 0;
+                }
+            }
+
+            if ($periods < 100) {
+                echo str_repeat('.', 100 - $periods);
+            }
+            echo "\r\n";
+
+            $time = round(microtime(true) - $start, 3);
+            $recsPerSec = round($upserted / $time, 2);
+            echo str_repeat('-', 100)."\r\n";
+            echo sprintf('Upsert complete for %s. Took %ss for %s recs/sec %s'."\r\n\r\n", $group, $time, $recsPerSec, $this->getMemoryUsage());
+        }
+
+        die();
+
+
+    }
+
     public function archiveAction()
     {
-        die('complete on db9, need to update to aws');
         $this->init();
 
         $groups = $this->getGroups();
@@ -255,6 +396,7 @@ class ConversionController extends Controller
             echo str_repeat('-', 100) . "\r\n";
 
             $collection = $connection->selectCollection($toDb, $toColl)->getMongoCollection();
+            $sessionCollection = $connection->selectCollection('content_session_archive', $toColl)->getMongoCollection();
 
             $processed = 0;
             $percentage = 0;
@@ -268,6 +410,33 @@ class ConversionController extends Controller
             foreach ($cursor as $doc) {
 
                 // var_dump($doc);
+                // die();
+
+                // Get visits
+                $criteria = [
+                    'month'     => new \MongoDate(strtotime(date('Y-m-01 00:00:00', $doc['createdAt']->sec))),
+                    'contentId' => (int) $doc['clientId'],
+                ];
+
+                if (isset($doc['userId'])) {
+                    $criteria['userId'] = $doc['userId'];
+                } else {
+                    $criteria['userId'] = ['$exists' => false];
+                }
+
+                $start = microtime(true);
+                $sessions = $sessionCollection->find($criteria)->count(true);
+
+                var_dump($sessions, microtime(true) - $start);
+
+                if ($sessions > 1) {
+                    die();
+                } else {
+                    continue;
+                }
+
+                // var_dump($criteria, $sessions);
+                die();
 
                 $metadata = [
                     'month'     => new \MongoDate(strtotime(date('Y-m-01 00:00:00', $doc['createdAt']->sec))),

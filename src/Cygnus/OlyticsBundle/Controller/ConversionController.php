@@ -194,6 +194,7 @@ class ConversionController extends Controller
 
     public function backfillSessionArchiveAction()
     {
+        die('done');
         $this->init();
 
         $groups = $this->getGroups();
@@ -343,6 +344,9 @@ class ConversionController extends Controller
         $conName = 'doctrine_mongodb.odm.db9_connection';
         $connection = $this->get($conName);
 
+        $sessionConName = 'doctrine_mongodb.odm.olytics_connection';
+        $sessionCon = $this->get($sessionConName);
+
         foreach ($groups as $group) {
 
             if (!in_array($group, $this->groups)) {
@@ -375,7 +379,7 @@ class ConversionController extends Controller
 
             $ts = (null === $result) ? 0 : $result['lastAccessed']->sec;
 
-            $limit = 200000;
+            $limit = 10000;
             echo sprintf('Requesting %s records since %s from %s::%s on %s'."\r\n", number_format($limit), date('Y-m-d H:i:s', $ts), $fromDb, $fromColl, $conName);
             $builder = new Builder($connection->selectCollection($fromDb, $fromColl));
             $cursor = $builder
@@ -392,12 +396,8 @@ class ConversionController extends Controller
             echo sprintf('Cursor generation complete. Found %s content events. Begin processing.'."\r\n", number_format($count));
 
             $page = $count / 100;
-
-            echo sprintf('Updating events in %s::%s - Each \'.\' represents ~%s content events'."\r\n", $toDb, $toColl, $page);
-            echo str_repeat('-', 100) . "\r\n";
-
-            $collection = $connection->selectCollection($toDb, $toColl)->getMongoCollection();
-            $sessionCollection = $connection->selectCollection('content_session_archive', $toColl)->getMongoCollection();
+            echo sprintf('Beginning archive update in %s::%s. Found %s content events - Each \'.\' represents ~%s content ids'."\r\n", $toDb, $toColl, number_format($count), $page);
+                // die();
 
             $processed = 0;
             $percentage = 0;
@@ -405,83 +405,65 @@ class ConversionController extends Controller
             $skipped = 0;
             $upserted = 0;
 
+            $sessionCollection = $sessionCon->selectCollection('content_session_archive', $toColl)->getMongoCollection();
 
-            $contentIds = [];
-
+            $cache = [];
             foreach ($cursor as $doc) {
 
-                // var_dump($doc);
-                // die();
+                set_time_limit(10);
 
-                // Get visits
+                $month = date('Y-m-01 00:00:00', $doc['createdAt']->sec);
+                $contentId = (int) $doc['clientId'];
+
+                // Find visits
                 $criteria = [
-                    'month'     => new \MongoDate(strtotime(date('Y-m-01 00:00:00', $doc['createdAt']->sec))),
-                    'contentId' => (int) $doc['clientId'],
+                    'month'     => new \MongoDate(strtotime($month)),
+                    'contentId' => $contentId,
+                    'userId'    => isset($doc['userId']) ? $doc['userId'] : ['$exists' => false],
                 ];
+                $userKey = isset($doc['userId']) ? (String) $doc['userId'] : 'anon';
+                $cacheKey = sprintf('%s.%s.%s', strtotime($month), $contentId, $userKey);
 
-                if (isset($doc['userId'])) {
-                    $criteria['userId'] = $doc['userId'];
-                } else {
-                    $criteria['userId'] = ['$exists' => false];
+
+                if (!isset($cache[$cacheKey])) {
+                    $cache[$cacheKey] = $sessionCollection->find($criteria)->count(true);
                 }
 
-                $start = microtime(true);
-                $sessions = $sessionCollection->find($criteria)->count(true);
+                $visits = $cache[$cacheKey];
 
-                var_dump($sessions, microtime(true) - $start);
-
-                if ($sessions > 1) {
-                    die();
-                } else {
-                    continue;
-                }
-
-                // var_dump($criteria, $sessions);
-                die();
 
                 $metadata = [
-                    'month'     => new \MongoDate(strtotime(date('Y-m-01 00:00:00', $doc['createdAt']->sec))),
-                    'contentId' => (int) $doc['clientId'],
+                    'month'     => $criteria['month'],
+                    'contentId' => $criteria['contentId'],
                 ];
 
                 if (isset($doc['userId'])) {
                     $metadata['userId'] = $doc['userId'];
-                    $userId = (string) $doc['userId'];
-                } else {
-                    $userId = '(none)';
                 }
 
-
-                $contentIds[date('Y-m-d H:i:s', $metadata['month']->sec)][$doc['clientId']][$userId] =  true;
-
-
                 $newObj = [
-                    '$setOnInsert'  => [
-                        'metadata'  => $metadata,
-                    ],
+                    '$setOnInsert'  => ['metadata' => $metadata],
                     '$set'          => [
-                        'lastAccessed'  => $doc['createdAt']
+                        'lastAccessed'  => $doc['createdAt'],
+                        'visits'        => $visits,
                     ],
-                    '$inc'          => [
+                    '$inc'              => [
                         'pageviews' => 1,
                     ],
                 ];
 
-                // var_dump($newObj);
-                // die();
-
-                $processed++;
-                $increment = 1 / $page;
-                $floored = floor($increment);
-                $percentage += $increment;
-
                 try {
-                    // $collection->update(['metadata' => $metadata], $newObj, ['upsert' => true]);
+                    $collection->update(['metadata' => $metadata], $newObj, ['upsert' => true]);
                     $upserted++;
                 } catch (\Exception $e) {
                     echo sprintf('ERRORS FOUND :: %s', $e->getMessage());
                     die();
                 }
+
+                $processed++;
+                $increment = 1 / $page;
+                $floored = floor($increment);
+                $percentage += $increment;
 
                 if ($floored > 0) {
                     $periods += $floored;
@@ -493,9 +475,7 @@ class ConversionController extends Controller
                 }
 
             }
-
-            var_dump($contentIds);
-            die();
+            unset($cache);
 
             if ($periods < 100) {
                 echo str_repeat('.', 100 - $periods);
@@ -508,6 +488,7 @@ class ConversionController extends Controller
             echo sprintf('Upsert complete for %s. Took %ss for %s recs/sec %s'."\r\n\r\n", $group, $time, $recsPerSec, $this->getMemoryUsage());
 
             die();
+
         }
         die();
     }

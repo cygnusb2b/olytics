@@ -29,7 +29,7 @@ class ContentArchiveAggregation extends AbstractAggregation
     {
         return [
             ['keys' => ['month' => 1, 'contentId' => 1, 'userId' => 1, 'sessionId' => 1], 'options' => ['unique' => true]],
-            ['keys' => ['lastAccessed' => 1], 'options' => []], // @todo Convert this to a TTL collection for 60 days
+            ['keys' => ['lastAccessed' => 1], 'options' => ['expireAfterSeconds' => 60*60*24*45]],
         ];
     }
 
@@ -123,7 +123,6 @@ class ContentArchiveAggregation extends AbstractAggregation
      */
     protected function handleTrafficArchive(EventInterface $event, $accountKey, $groupKey)
     {
-        return $this;
         // Get the database and collection names
         list($dbName, $collName) = $this->getArchiveDbInfo($accountKey, $groupKey);
 
@@ -131,13 +130,26 @@ class ContentArchiveAggregation extends AbstractAggregation
         $indexes = $this->getIndexManager()->indexFactoryMulti($this->getTrafficArchiveIndexes());
         $this->getIndexManager()->createIndexes($indexes, $dbName, $collName);
 
+        $builder = $this->createQueryBuilder($dbName, $collName)
+            ->update()
+            ->upsert(true)
+        ;
+
         $metadata = [
             'month'     => $this->getMonthFromDate($event->getCreatedAt()),
             'contentId' => $event->getEntity()->getClientId(),
         ];
 
+        $builder
+            ->field('metadata.month')->equals($metadata['month'])
+            ->field('metadata.contentId')->equals($metadata['contentId'])
+        ;
+
         if (null !== ($userId = $this->getUserId($event))) {
             $metadata['userId'] = $userId;
+            $builder->field('metadata.userId')->equals($userId);
+        } else {
+            $builder->field('metadata.userId')->exists(false);
         }
 
         $newObj = [
@@ -157,10 +169,7 @@ class ContentArchiveAggregation extends AbstractAggregation
             $newObj['$set']['visits'] = $visits;
         }
 
-        $builder = $this->createQueryBuilder($dbName, $collName)
-            ->update()
-            ->upsert(true)
-            ->field('metadata')->equals($metadata)
+        $builder
             ->setNewObj($newObj)
             ->getQuery()
             ->execute();
@@ -184,6 +193,8 @@ class ContentArchiveAggregation extends AbstractAggregation
             ->find()
             ->field('month')->equals($criteria['month'])
             ->field('contentId')->equals($criteria['contentId'])
+            ->select('month')
+            ->exclude('_id')
         ;
 
         if (isset($criteria['userId'])) {

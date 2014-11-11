@@ -406,6 +406,7 @@ class ConversionController extends Controller
             $upserted = 0;
 
             $sessionCollection = $sessionCon->selectCollection('content_session_archive', $toColl)->getMongoCollection();
+            $collection = $connection->selectCollection($toDb, $toColl)->getMongoCollection();
 
             $cache = [];
             foreach ($cursor as $doc) {

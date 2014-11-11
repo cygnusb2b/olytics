@@ -360,8 +360,8 @@ class ConversionController extends Controller
 
             echo "Upserting to content archive for group '{$group}'\r\n";
 
-            $fromDb = sprintf('oly_%s_%s', $account, $group);
-            $fromColl = 'event.content.2014_Q4';
+            $fromDb = sprintf('oly_%s_%s_events', $account, $group);
+            $fromColl = 'content';
 
             $toDb = 'content_traffic_archive';
             $toColl = sprintf('%s_%s', $account, $group);
@@ -413,10 +413,6 @@ class ConversionController extends Controller
 
                 set_time_limit(10);
 
-                // var_dump($doc);
-                // die();
-
-
 
                 $month = date('Y-m-01 00:00:00', $doc['createdAt']->sec);
 
@@ -467,10 +463,11 @@ class ConversionController extends Controller
                 $eventKey = sprintf('%s.%s', $contentId, isset($doc['userId']) ? (String) $doc['userId'] : 'anon');
                 $visits = isset($cache[$cacheKey][$eventKey]) ? $cache[$cacheKey][$eventKey] : 1;
 
+
                 $criteria = [
                     'metadata.month'        => new \MongoDate(strtotime($month)),
                     'metadata.contentId'    => $contentId,
-                    'metadata.userId'       => isset($doc['userId']) ? $doc['userId'] : ['$exists' => false],
+                    'metadata.userId'       => isset($doc['session']['customerId']) ? $doc['session']['customerId'] : ['$exists' => false],
                 ];
 
 
@@ -479,8 +476,8 @@ class ConversionController extends Controller
                     'contentId' => $contentId,
                 ];
 
-                if (isset($doc['userId'])) {
-                    $metadata['userId'] = $doc['userId'];
+                if (isset($doc['session']['customerId'])) {
+                    $metadata['userId'] = $doc['session']['customerId'];
                 }
 
                 $newObj = [

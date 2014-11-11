@@ -397,7 +397,7 @@ class ConversionController extends Controller
 
             $page = $count / 100;
             echo sprintf('Beginning archive update in %s::%s. Found %s content events - Each \'.\' represents ~%s content ids'."\r\n", $toDb, $toColl, number_format($count), $page);
-                // die();
+            echo str_repeat('-', 100)."\r\n";
 
             $processed = 0;
             $percentage = 0;
@@ -413,29 +413,70 @@ class ConversionController extends Controller
 
                 set_time_limit(10);
 
+                // var_dump($doc);
+                // die();
+
+
+
                 $month = date('Y-m-01 00:00:00', $doc['createdAt']->sec);
-                $contentId = (int) $doc['clientId'];
 
-                // Find visits
-                $criteria = [
-                    'month'     => new \MongoDate(strtotime($month)),
-                    'contentId' => $contentId,
-                    'userId'    => isset($doc['userId']) ? $doc['userId'] : ['$exists' => false],
-                ];
-                $userKey = isset($doc['userId']) ? (String) $doc['userId'] : 'anon';
-                $cacheKey = sprintf('%s.%s.%s', strtotime($month), $contentId, $userKey);
-
-
+                $cacheKey = strtotime($month);
                 if (!isset($cache[$cacheKey])) {
-                    $cache[$cacheKey] = $sessionCollection->find($criteria)->count(true);
+                    $aggTime = microtime(true);
+                    $ops = [
+                        [
+                            '$match'    => [
+                                'month'     => new \MongoDate(strtotime($month))
+                            ],
+                        ],
+                        [
+                            '$group'    => [
+                                '_id'       => [
+                                    'contentId' => '$contentId',
+                                    'userId'    => '$userId',
+                                ],
+                                'visits'    => ['$sum' => 1],
+                            ],
+                        ],
+                    ];
+
+                    echo sprintf('Aggregating visit data for month %s.'."\r\n", $month);
+
+                    $agg = $sessionCollection->aggregate($ops);
+
+                    if (!isset($agg['ok']) || $agg['ok'] != 1) {
+                        echo sprintf('Aggregation FAILED: %s', serialize($agg));
+                        die();
+                    }
+
+                    echo sprintf('Aggregation complete. Found %s records. Took %ss'."\r\n", number_format(count($agg['result'])), round(microtime(true) - $aggTime, 2));
+
+                    $formatted = [];
+                    foreach ($agg['result'] as $row) {
+                        $key = sprintf('%s.%s', $row['_id']['contentId'], isset($row['_id']['userId']) ? (String) $row['_id']['userId'] : 'anon');
+                        $formatted[$key] = $row['visits'];
+                    }
+
+                    $cache[$cacheKey] = $formatted;
+                    unset($formatted);
+                    unset($agg);
                 }
 
-                $visits = $cache[$cacheKey];
+                $contentId = (int) $doc['clientId'];
+
+                $eventKey = sprintf('%s.%s', $contentId, isset($doc['userId']) ? (String) $doc['userId'] : 'anon');
+                $visits = isset($cache[$cacheKey][$eventKey]) ? $cache[$cacheKey][$eventKey] : 1;
+
+                $criteria = [
+                    'metadata.month'        => new \MongoDate(strtotime($month)),
+                    'metadata.contentId'    => $contentId,
+                    'metadata.userId'       => isset($doc['userId']) ? $doc['userId'] : ['$exists' => false],
+                ];
 
 
                 $metadata = [
-                    'month'     => $criteria['month'],
-                    'contentId' => $criteria['contentId'],
+                    'month'     => new \MongoDate(strtotime($month)),
+                    'contentId' => $contentId,
                 ];
 
                 if (isset($doc['userId'])) {
@@ -454,7 +495,7 @@ class ConversionController extends Controller
                 ];
 
                 try {
-                    $collection->update(['metadata' => $metadata], $newObj, ['upsert' => true]);
+                    $collection->update($criteria, $newObj, ['upsert' => true]);
                     $upserted++;
                 } catch (\Exception $e) {
                     echo sprintf('ERRORS FOUND :: %s', $e->getMessage());

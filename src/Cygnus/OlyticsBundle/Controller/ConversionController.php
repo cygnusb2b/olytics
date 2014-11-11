@@ -341,7 +341,7 @@ class ConversionController extends Controller
 
         $groups = $this->getGroups();
 
-        $conName = 'doctrine_mongodb.odm.db9_connection';
+        $conName = 'doctrine_mongodb.odm.olytics_connection';
         $connection = $this->get($conName);
 
         $sessionConName = 'doctrine_mongodb.odm.olytics_connection';
@@ -379,7 +379,7 @@ class ConversionController extends Controller
 
             $ts = (null === $result) ? 0 : $result['lastAccessed']->sec;
 
-            $limit = 10000;
+            $limit = 200000;
             echo sprintf('Requesting %s records since %s from %s::%s on %s'."\r\n", number_format($limit), date('Y-m-d H:i:s', $ts), $fromDb, $fromColl, $conName);
             $builder = new Builder($connection->selectCollection($fromDb, $fromColl));
             $cursor = $builder
@@ -529,7 +529,7 @@ class ConversionController extends Controller
             echo str_repeat('-', 100)."\r\n";
             echo sprintf('Upsert complete for %s. Took %ss for %s recs/sec %s'."\r\n\r\n", $group, $time, $recsPerSec, $this->getMemoryUsage());
 
-            die();
+            // die();
 
         }
         die();

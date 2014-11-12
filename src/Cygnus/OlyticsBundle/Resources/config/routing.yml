@@ -13,23 +13,3 @@ cygnus_olytics_library:
 cygnus_olytics_test_request:
     pattern:  /test
     defaults: { _controller: CygnusOlyticsBundle:Test:index }
-
-cygnus_olytics_conversion_userid:
-    pattern:  /conversion/userids
-    defaults: { _controller: CygnusOlyticsBundle:Conversion:appendUserIds }
-
-cygnus_olytics_conversion_events:
-    pattern:  /conversion/events
-    defaults: { _controller: CygnusOlyticsBundle:Conversion:appendUserIdsToEvents }
-
-cygnus_olytics_conversion_archive:
-    pattern:  /conversion/archive
-    defaults: { _controller: CygnusOlyticsBundle:Conversion:archive }
-
-cygnus_olytics_conversion_backfill_session_archive:
-    pattern:  /conversion/session_archive/backfill
-    defaults: { _controller: CygnusOlyticsBundle:Conversion:backfillSessionArchive }
-
-cygnus_olytics_conversion_create_session_archive:
-    pattern:  /conversion/session_archive/create
-    defaults: { _controller: CygnusOlyticsBundle:Conversion:createSessionArchive }

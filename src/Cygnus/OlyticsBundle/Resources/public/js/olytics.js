@@ -613,12 +613,19 @@ if (typeof Olytics !== 'object') {
                             key: '__olyc',
                             expires: 1051200
                         },
-                        acquisition: {
+                        campaign: {
                             key: '__olyz',
                             expires: 259200
                         }
                     },
                     referringCustomerKey: 'ruid',
+                    campaignKeys: {
+                        source: 'utm_source',
+                        medium: 'utm_medium',
+                        name: 'utm_campaign',
+                        content: 'utm_content',
+                        keyword: 'utm_term'
+                    },
                     env: {},
                     page: {},
                     referrer: null,
@@ -628,6 +635,13 @@ if (typeof Olytics !== 'object') {
                 visitor = {},
                 session = {},
                 customer = {},
+                campaign = {
+                    source: null,
+                    medium: null,
+                    name: null,
+                    content: null,
+                    keyword: null,
+                },
                 setConfig = {
                     domainName: function(domain) {
                         config.domainName = (isDefined(domain)) ? cleanDomainName(domain) : documentAlias.domain;
@@ -636,6 +650,12 @@ if (typeof Olytics !== 'object') {
                     referringCustomerKey: function (key) {
                         if (isString(key)) {
                             config.referringCustomerKey = key;
+                        }
+                        return this;
+                    },
+                    campaignKey: function (key, value) {
+                        if (isDefined(config.campaignKeys[key]) && isString(value)) {
+                            config.campaignKeys[key] = value;
                         }
                         return this;
                     },
@@ -715,6 +735,7 @@ if (typeof Olytics !== 'object') {
                     .envTimezone()
                     .envResolution()
                     .envWindowSize();
+
             }
 
             function getTrackerUrl()
@@ -747,6 +768,21 @@ if (typeof Olytics !== 'object') {
                     return true;
                 }
                 return getReferringCustomer() !== session.rcid;
+            }
+
+            function hasCampaignCookie()
+            {
+                return null !== getCampaignCookie();
+            }
+
+            function getCampaignCookie()
+            {
+                var cookie = getCookie('campaign');
+                if (cookie === null) return null;
+                if (campaignObjValid(cookie)) {
+                    return cleanCampaign(cookie);
+                }
+                return null;
             }
 
             function hasVisitorCookie()
@@ -828,10 +864,84 @@ if (typeof Olytics !== 'object') {
                 setSession(session);
             }
 
+            function getSetCampaign()
+            {
+                var
+                    configCampaign = getCampaignFromConfig(),
+                    queryCampaign  = getCampaignFromQuery(),
+                    campaignCookie = getCampaignCookie()
+                ;
+                if (null !== configCampaign) {
+                    return configCampaign;
+                }
+                if (null !== queryCampaign) {
+                    return queryCampaign;
+                }
+                if (null !== campaignCookie) {
+                    return campaignCookie;
+                }
+                return null;
+            }
+
+            function hasSetCampaign()
+            {
+                return null !== getSetCampaign();
+            }
+
+            function cleanCampaign(obj)
+            {
+                var cleaned = {};
+                for (key in config.campaignKeys) {
+                    cleaned[key] = isDefined(obj[key]) ? obj[key] : null;
+                }
+                return cleaned;
+            }
+
+            function getCampaignFromConfig()
+            {
+                if (campaignObjValid(campaign)) {
+                    return cleanCampaign(campaign);
+                }
+                return null;
+            }
+
+            function getCampaignFromQuery()
+            {
+                var requestCampaign = extractCampaignFromQuery();
+                if (campaignObjValid(requestCampaign)) {
+                    return cleanCampaign(requestCampaign);
+                }
+                return null;
+            }
+
+            function extractCampaignFromQuery()
+            {
+                var requestCampaign = {};
+                for (key in config.campaignKeys) {
+                    requestCampaign[key] = getQueryParam(windowAlias.location.href, config.campaignKeys[key]);
+                }
+                return requestCampaign;
+            }
+
+            function campaignObjValid(obj)
+            {
+                var requiredKeys = ['source', 'medium', 'name'];
+                for (i in requiredKeys) {
+                    var key = requiredKeys[i];
+
+                    if (!isDefined(obj[key])) {
+                        return false;
+                    }
+
+                    if (null === obj[key]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
             function detectSetVisitor()
             {
-                // console.log(hasReferringCustomer(), getReferringCustomer());
-
                 config.appendCustomer = false;
 
                 if (!hasVisitorCookie()) {
@@ -908,8 +1018,35 @@ if (typeof Olytics !== 'object') {
 
             function setSession(value)
             {
+                if (hasSetCampaign()) {
+                    value.campaign = getSetCampaign();
+
+                    if (!hasCampaignCookie()) {
+                        setCookie('campaign', value.campaign);
+                    } else if (shouldUpdateCampaignCookie(value.campaign, getCampaignCookie())) {
+                        setCookie('campaign', value.campaign);
+                    }
+                }
                 session = value;
                 setCookie('session', value);
+            }
+
+            function shouldUpdateCampaignCookie(set, cookieVal)
+            {
+                for (key in config.campaignKeys) {
+                    if (set[key] !== cookieVal[key]) {
+                        console.log('refreshing campaign cookie');
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function setCampaignValue(key, value)
+            {
+                if (isDefined(campaign[key]) && isDefined(value)) {
+                    campaign[key] = value;
+                }
             }
 
             function trackEvent(action, entity, relatedTo, data)
@@ -1048,6 +1185,12 @@ if (typeof Olytics !== 'object') {
                 },
                 _setReferringCustomerKey: function (key) {
                     setConfig.referringCustomerKey(key);
+                },
+                _setCampaignValue: function (key, value) {
+                    setCampaignValue(key, value);
+                },
+                _setCampaignKey: function (key, value) {
+                    setConfig.campaignKey(key, value);
                 },
                 _setVisitorCookieName: function(cname) {
                     setConfig.cookieKey(cname, 'visitor');

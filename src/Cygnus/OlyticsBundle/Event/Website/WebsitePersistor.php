@@ -132,6 +132,7 @@ class WebsitePersistor extends Persistor
             ],
             'session'   => [
                 'id'            => new MongoBinData($event->getSession()->getId(), MongoBinData::UUID),
+                'campaign'      => $event->getSession()->getCampaign(),
                 'customerId'    => $event->getSession()->getCustomerId(),
                 'rcid'          => $event->getSession()->getRcid(),
                 'visitorId'     => new MongoBinData($event->getSession()->getVisitorId(), MongoBinData::UUID),

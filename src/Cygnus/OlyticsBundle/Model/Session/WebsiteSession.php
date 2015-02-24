@@ -35,6 +35,13 @@ class WebsiteSession extends AbstractSession
     protected $rcid;
 
     /**
+     * Campaign
+     *
+     * @var array|null
+     */
+    protected $campaign;
+
+    /**
      * Enviroment variables, such as timezone and screen resolution
      *
      * @var array
@@ -97,6 +104,28 @@ class WebsiteSession extends AbstractSession
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * Set the campaign information
+     *
+     * @param  array|null
+     * @return self
+     */
+    public function setCampaign($campaign)
+    {
+        $this->campaign = $campaign;
+        return $this;
+    }
+
+    /**
+     * Get the campaign information
+     *
+     * @return array|null
+     */
+    public function getCampaign()
+    {
+        return $this->campaign;
     }
 
     /**

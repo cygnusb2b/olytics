@@ -244,18 +244,37 @@ if (typeof Olytics !== 'object') {
             return matches ? matches[1] : url;
         }
 
-        function getRootDomain(url)
+        function createUrlParser(url)
         {
             var parser = documentAlias.createElement('a');
             parser.href = url;
+            return parser;
+        }
+
+        function getRootDomain(url)
+        {
+            var parser = createUrlParser(url);
             return parser.hostname;
         }
 
         function getPathname(url)
         {
-            var parser = documentAlias.createElement('a');
-            parser.href = url;
+            var parser = createUrlParser(url);
             return parser.pathname;
+        }
+
+        function getQueryParam(url, key)
+        {
+            var
+                parser = createUrlParser(url),
+                regex = new RegExp(key +'=([^&]+)')
+            ;
+
+            if (!parser.search) {
+                return null;
+            }
+            var results = parser.search.match(regex);
+            return results ? decodeWrapper(results[1]) : null;
         }
 
         function getParameter(url, name)
@@ -599,6 +618,7 @@ if (typeof Olytics !== 'object') {
                             expires: 259200
                         }
                     },
+                    referringCustomerKey: 'ruid',
                     env: {},
                     page: {},
                     referrer: null,
@@ -611,6 +631,12 @@ if (typeof Olytics !== 'object') {
                 setConfig = {
                     domainName: function(domain) {
                         config.domainName = (isDefined(domain)) ? cleanDomainName(domain) : documentAlias.domain;
+                        return this;
+                    },
+                    referringCustomerKey: function (key) {
+                        if (isString(key)) {
+                            config.referringCustomerKey = key;
+                        }
                         return this;
                     },
                     referrer: function(referrer) {
@@ -696,6 +722,33 @@ if (typeof Olytics !== 'object') {
                 return config.trackerDomain + config.baseEndpoint + config.endpoint
             }
 
+            function hasReferringCustomer()
+            {
+                return getReferringCustomer() !== null;
+            }
+
+            function getReferringCustomer()
+            {
+                var url = windowAlias.location.href;
+                return getQueryParam(url, config.referringCustomerKey);
+            }
+
+            function sessionHasReferringCustomer(session)
+            {
+                return isDefined(session.rcid) && null !== session.rcid;
+            }
+
+            function shouldUpdateReferringCustomer(session)
+            {
+                if (!hasReferringCustomer()) {
+                    return false;
+                }
+                if (!sessionHasReferringCustomer(session)) {
+                    return true;
+                }
+                return getReferringCustomer() !== session.rcid;
+            }
+
             function hasVisitorCookie()
             {
                 return (getVisitorCookie() !== null)
@@ -769,13 +822,16 @@ if (typeof Olytics !== 'object') {
 
                 var session = {
                     id: uuid.v4(),
-                    createdAt: d.toGMTString()
+                    createdAt: d.toGMTString(),
+                    rcid: getReferringCustomer()
                 }
                 setSession(session);
             }
 
             function detectSetVisitor()
             {
+                // console.log(hasReferringCustomer(), getReferringCustomer());
+
                 config.appendCustomer = false;
 
                 if (!hasVisitorCookie()) {
@@ -810,7 +866,12 @@ if (typeof Olytics !== 'object') {
                         // Check for end of day expiration
                         if (!sessionEndOfDay(session)) {
                            // Handle acquisition source here
-                            setSession(session);
+
+                            if (shouldUpdateReferringCustomer(session)) {
+                                createNewSession();
+                            } else {
+                                setSession(session);
+                            }
                         } else {
                             createNewSession();
                         }
@@ -984,6 +1045,9 @@ if (typeof Olytics !== 'object') {
                 },
                 _trackPageview: function () {
                     trackPageView();
+                },
+                _setReferringCustomerKey: function (key) {
+                    setConfig.referringCustomerKey(key);
                 },
                 _setVisitorCookieName: function(cname) {
                     setConfig.cookieKey(cname, 'visitor');

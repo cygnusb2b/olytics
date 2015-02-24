@@ -133,6 +133,7 @@ class WebsitePersistor extends Persistor
             'session'   => [
                 'id'            => new MongoBinData($event->getSession()->getId(), MongoBinData::UUID),
                 'customerId'    => $event->getSession()->getCustomerId(),
+                'rcid'          => $event->getSession()->getRcid(),
                 'visitorId'     => new MongoBinData($event->getSession()->getVisitorId(), MongoBinData::UUID),
                 'env'           => $event->getSession()->getEnv(),
                 'ip'            => $event->getSession()->getIp(),

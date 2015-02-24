@@ -33,6 +33,9 @@ class GenericFormatter extends AbstractFormatter
                         // Convert to integer
                         $v = (int) $v;
                     }
+                } elseif (1 === preg_match('/^[0-9a-f]{24}$/i', $v)) {
+                    // Handle MongoId formats
+                    $v = new \MongoId($v);
                 } else {
                     // Non-numeric string, convert bools, nulls, and empty strings
                     $value = strtolower($v);

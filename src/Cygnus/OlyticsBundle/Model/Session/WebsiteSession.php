@@ -28,6 +28,13 @@ class WebsiteSession extends AbstractSession
     protected $customerId;
 
     /**
+     * Referring Customer ID
+     *
+     * @var mixed
+     */
+    protected $rcid;
+
+    /**
      * Enviroment variables, such as timezone and screen resolution
      *
      * @var array
@@ -112,6 +119,28 @@ class WebsiteSession extends AbstractSession
     public function getCustomerId()
     {
         return $this->customerId;
+    }
+
+    /**
+     * Set the referring customer id
+     *
+     * @param  mixed    $rcid
+     * @return self
+     */
+    public function setRcid($rcid)
+    {
+        $this->rcid = $rcid;
+        return $this;
+    }
+
+    /**
+     * Get the referring customer id
+     *
+     * @return mixed
+     */
+    public function getRcid()
+    {
+        return $this->rcid;
     }
 
     /**

@@ -89,6 +89,7 @@ class WebsiteRequestManager extends RequestManager
         $this->persistor->persist(
             $this->event,
             $this->relatedEntities,
+            $this->eventRequest->getApplication(),
             $this->eventRequest->getAccount(),
             $this->eventRequest->getProduct(),
             $this->eventRequest->appendCustomer

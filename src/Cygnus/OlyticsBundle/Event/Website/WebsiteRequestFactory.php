@@ -21,7 +21,9 @@ class WebsiteRequestFactory extends RequestFactory
             $$key = $this->asArray($requestData->get($key));
         }
         $appendCustomer = ($requestData->get('appendCustomer') === true) ? true : false;
-        return new WebsiteRequest($session, $event, $account, $product, $appendCustomer);
+        $r = new WebsiteRequest($session, $event, $account, $product, $appendCustomer);
+        $r->setApplication($requestData->get('app'));
+        return $r;
     }
 
     /**

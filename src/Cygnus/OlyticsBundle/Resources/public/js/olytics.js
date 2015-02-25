@@ -931,7 +931,7 @@ if (typeof Olytics !== 'object') {
             function campaignObjValid(obj)
             {
                 var requiredKeys = ['source', 'medium', 'name'];
-                for (i in requiredKeys) {
+                for (var i in requiredKeys) {
                     var key = requiredKeys[i];
 
                     if (!isDefined(obj[key])) {
@@ -1038,9 +1038,8 @@ if (typeof Olytics !== 'object') {
 
             function shouldUpdateCampaignCookie(set, cookieVal)
             {
-                for (key in config.campaignKeys) {
+                for (var key in config.campaignKeys) {
                     if (set[key] !== cookieVal[key]) {
-                        console.log('refreshing campaign cookie');
                         return true;
                     }
                 }

@@ -20,6 +20,8 @@ class WebsiteRequest extends Request
      */
     public $appendCustomer;
 
+    protected $application;
+
     /**
      * Creates a new WebsiteRequest
      *
@@ -37,6 +39,40 @@ class WebsiteRequest extends Request
         $this->appendCustomer = $appendCustomer;
 
         $this->setSession($session)->setEvent($event);
+    }
+
+    /**
+     * Sets the application key for this request.
+     *
+     * @param  string   $application
+     * @return self
+     */
+    public function setApplication($application)
+    {
+        if (is_string($application)) {
+            $this->application = $application;
+        }
+        return $this;
+    }
+
+    /**
+     * Determines if there is an application key for this request.
+     *
+     * @return bool
+     */
+    public function hasApplication()
+    {
+        return is_string($this->getApplication());
+    }
+
+    /**
+     * Gets the application key for this request.
+     *
+     * @return string|null
+     */
+    public function getApplication()
+    {
+        return $this->application;
     }
 
     /**

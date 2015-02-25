@@ -600,6 +600,7 @@ if (typeof Olytics !== 'object') {
                     baseEndpoint: '/events',
                     endpoint: endpoint || null,
                     domainName: documentAlias.domain,
+                    app: null,
                     cookie: {
                         visitor: {
                             key: '__olya',
@@ -716,6 +717,10 @@ if (typeof Olytics !== 'object') {
                     envTimezone: function(tz) {
                         var d = new Date();
                         config.env.tz = (isDefined(tz)) ? tz : d.getTimezoneOffset();
+                        return this;
+                    },
+                    app: function(app) {
+                        config.app = app;
                         return this;
                     }
                 }
@@ -1074,7 +1079,8 @@ if (typeof Olytics !== 'object') {
                     session: session,
                     // container: getPageViewEvent(),
                     event: e,
-                    appendCustomer: config.appendCustomer
+                    appendCustomer: config.appendCustomer,
+                    app: config.app
                 };
                 trackerObject.session.visitorId = isDefined(visitor.id) ? visitor.id : null;
                 trackerObject.session.customerId = isDefined(customer.id) ? customer.id : null;;
@@ -1203,6 +1209,9 @@ if (typeof Olytics !== 'object') {
                 },
                 _setAcquisitionCookieName: function(cname) {
                     setConfig.cookieKey(cname, 'acquisition');
+                },
+                _setApp: function (app) {
+                    setConfig.app(app);
                 }
             }
         }

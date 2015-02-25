@@ -31,20 +31,29 @@ class WebsitePersistor extends Persistor
     protected $product;
 
     /**
+     * The Application key
+     *
+     * @var string|null
+     */
+    protected $app;
+
+    /**
      * Persists an event, it's session, and it's related entities to the database
      *
      * @param  EventInterface   $event
      * @param  array            $relatedEntities
+     * @param  string           $app
      * @param  string           $account
      * @param  string           $product
      * @param  boolean          $appendCustomer
      * @return void
      * @todo   Need to determine how to store relatedEntities on the event directly...
      */
-    public function persist(EventInterface $event, array $relatedEntities, $account, $product, $appendCustomer = false)
+    public function persist(EventInterface $event, array $relatedEntities, $app, $account, $product, $appendCustomer = false)
     {
         $this->account = strtolower($account);
         $this->product = strtolower($product);
+        $this->app = is_string($app) ? $app : null;
 
         // Ensure account and product exists
         $this->validateProduct();
@@ -208,6 +217,10 @@ class WebsitePersistor extends Persistor
      */
     protected function getDatabaseName()
     {
-        return sprintf('oly_%s_%s_events', $this->account, $this->product);
+        $dbKey = sprintf('%s_%s', $this->account, $this->product);
+        if (null !== $this->app) {
+            $dbKey .= '_'.$this->app;
+        }
+        return sprintf('oly_%s_events', $dbKey);
     }
 }

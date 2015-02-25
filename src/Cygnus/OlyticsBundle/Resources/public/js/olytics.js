@@ -600,6 +600,7 @@ if (typeof Olytics !== 'object') {
                     baseEndpoint: '/events',
                     endpoint: endpoint || null,
                     domainName: documentAlias.domain,
+                    useCookieDomain: false,
                     app: null,
                     cookie: {
                         visitor: {
@@ -646,6 +647,7 @@ if (typeof Olytics !== 'object') {
                 setConfig = {
                     domainName: function(domain) {
                         config.domainName = (isDefined(domain)) ? cleanDomainName(domain) : documentAlias.domain;
+                        config.useCookieDomain = config.domainName !== documentAlias.domain;
                         return this;
                     },
                     referringCustomerKey: function (key) {
@@ -1149,11 +1151,10 @@ if (typeof Olytics !== 'object') {
                         key = config.cookie[ctype].key,
                         value = JSON.stringify(value),
                         expires = '; expires=' + d.toGMTString(),
-                        domain = '; domain=' + config.domainName,
+                        domain = (config.useCookieDomain) ? '; domain=' + config.domainName : '',
                         path = '; path=/';
 
                     if (value) {
-                        // console.log('Setting cookie: ' + key);
                         documentAlias.cookie = encodeWrapper(key) + '=' + encodeWrapper(value) + expires + domain + path;
                     }
                 }

@@ -10,4 +10,9 @@ class DefaultController extends Controller
     {
         return Response::create('Pleased to meet you. My name is Oly.', 403);
     }
+
+    public function sapienceAction()
+    {
+        return $this->render('CygnusOlyticsBundle:Default:sapience.html.twig');
+    }
 }

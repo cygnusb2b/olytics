@@ -107,8 +107,9 @@ var Sapience = (function() {
                 event: e,
                 session: session
             };
+
             r.session.visitorId = Utils.isDefined(visitor.id) ? visitor.id : null;
-            r.session.customerId = Utils.isDefined(identity.id) ? identity.id : null;;
+            r.session.customerId = (hasIdentity() && Utils.isDefined(identity.id)) ? identity.id : null;
             r.session.env = env;
             return r;
         }

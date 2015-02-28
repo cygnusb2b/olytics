@@ -22,8 +22,8 @@
             _sapient.push(['_config', 'setEndpoint', '/acbm/fcp']);
             _sapient.push(['_config', 'setApp', 'brevity']);
             _sapient.push(['_config', 'setTrackerDomain', 'http://dev.olytics.cygnus.com']);
-            // _sapient.push(['_config', 'setScrollSelector', '#foo']);
-            // _sapient.push(['_config', 'setDisabled', true]);
+            _sapient.push(['_config', 'setScrollSelector', window]); // Provides the element to detect scroll on. Default window
+            _sapient.push(['_config', 'setDisabled', false]);
 
 
 
@@ -38,11 +38,13 @@
                  s.parentNode.insertBefore(g,s);
              })();
 
-             _sapient.push(['_trackEvent', 'view', {type: 'content', clientId: 1234}]);
-             _sapient.push(['_trackScroll', {type: 'content', clientId: 1234}]);
-             _sapient.push(['_trackFocus', {type: 'content', clientId: 1234}]);
+             var sampleEntity = {type: 'content', clientId: 1234};
 
-             // _sapient.push(['_trackPageview']);
+             _sapient.push(['_trackEvent', 'view', sampleEntity]);
+             _sapient.push(['_trackScroll', sampleEntity]);
+             _sapient.push(['_trackFocus', sampleEntity]);
+
+             _sapient.push(['_trackPageview']);
 
         </script>
 

@@ -138,7 +138,7 @@ var Sapience = (function() {
 
     function ScrollTracker(selector)
     {
-        var element = Utils.isString(selector) ? jQuery(selector) : jQuery(window);
+        var element = jQuery(selector);
         var bound = [];
         var delta = 5;
 
@@ -311,7 +311,7 @@ var Sapience = (function() {
             },
             previousEvents = {},
             visitor, session, identity, campaign,
-            focus, ping
+            focus, ping, scroll
         ;
 
         function init()
@@ -809,7 +809,7 @@ var Sapience = (function() {
                 },
                 referrer: Utils.getReferrer(),
                 referringIdentityKey: 'sapience_ri',
-                scrollSelector: null,
+                scrollSelector: window,
                 trackerDomain: 'http://olytics.cygnus.com',
                 useCookieDomain: false
             };
@@ -975,7 +975,7 @@ var Sapience = (function() {
                     return this;
                 },
                 setScrollSelector: function (selector) {
-                    if (!Utils.isString(selector)) {
+                    if (!Utils.isDefined(selector)) {
                         Debugger.warn('Config()', 'Unable to set the scroll selector value.');
                         return this;
                     }

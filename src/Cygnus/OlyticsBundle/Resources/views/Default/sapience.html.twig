@@ -22,6 +22,7 @@
             _sapient.push(['_config', 'setEndpoint', '/acbm/fcp']);
             _sapient.push(['_config', 'setApp', 'brevity']);
             _sapient.push(['_config', 'setTrackerDomain', 'http://dev.olytics.cygnus.com']);
+            // _sapient.push(['_config', 'setScrollSelector', '#foo']);
             // _sapient.push(['_config', 'setDisabled', true]);
 
 
@@ -38,7 +39,10 @@
              })();
 
              _sapient.push(['_trackEvent', 'view', {type: 'content', clientId: 1234}]);
-             _sapient.push(['_trackPageview']);
+
+             _sapient.push(['_trackScroll', {type: 'content', clientId: 1234}]);
+
+             // _sapient.push(['_trackPageview']);
 
         </script>
 
@@ -68,6 +72,7 @@
                     </p>
                     {% endblock %}
             </div>
+            <div style="height: 4970px"></div>
         </div>
 
         <!-- Include all compiled plugins (below), or include individual files as needed -->

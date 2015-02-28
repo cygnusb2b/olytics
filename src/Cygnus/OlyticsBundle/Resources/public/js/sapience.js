@@ -21,7 +21,168 @@ var Sapience = (function() {
     ;
 
     init();
+
     _sapient = new Proxy();
+
+    function ScrollTracker(selector)
+    {
+        var element = Utils.isString(selector) ? jQuery(selector) : jQuery(window);
+        var bound = [];
+        var delta = 5;
+
+        init();
+
+        this.bind = function(entity) {
+            bound.push(entity);
+            console.log(bound);
+            return this;
+        }
+
+        function init()
+        {
+            if (!hasSupport()) {
+                return;
+            }
+
+            var didScroll = false;
+            var lastScrollTop = 0;
+            var calcs = calculateElements();
+
+            element.on('resize', function (e) {
+                Debugger.info('ScrollTracker()', 'Window resized. Recalculated breakpoints.');
+                calcs = calculateElements();
+            });
+
+            element.on('scroll', function (e) {
+                didScroll = true;
+            });
+
+            setInterval(function() {
+                if (didScroll && bound.length > 0) {
+                    hasScrolled();
+                    didScroll = false;
+                }
+            }, 250);
+
+            var currentBreak;
+            var lastBreak;
+
+            function hasScrolled() {
+                var
+                    breaks = calcs.breaks,
+                    st = element.scrollTop(),
+                    sb = st + calcs.heights.viewport
+                ;
+
+                // Make sure they scroll more than delta
+                if (Math.abs(lastScrollTop - st) <= delta) {
+                    return;
+                }
+
+                currentBreak = getCurrentBreak(sb, breaks);
+                var direction = st > lastScrollTop ? 'down' : 'up';
+
+                if (currentBreak !== lastBreak && null !== currentBreak) {
+                    Debugger.info('ScrollTracker()', 'Scroll breakpoint ' + currentBreak + ' of 4 reached. Direction: ' + direction);
+                    sendEvents(currentBreak, direction);
+                    lastBreak = currentBreak;
+                }
+                lastScrollTop = st;
+            }
+        }
+
+        function sendEvents(breakpoint, direction)
+        {
+            var data = {
+                top: (breakpoint - 1) * 25 + 1,
+                bottom: breakpoint * 25,
+                direction: direction
+            };
+            for (var i in bound) {
+                _sapient.push(['_trackEvent', 'scroll', bound[i], undefined, data]);
+            }
+        }
+
+        function getCurrentBreak(sb, breaks)
+        {
+            if (sb <= breaks[0]) {
+                return null;
+            } else if (sb > breaks[0] && sb <= breaks[1]) {
+                // 1 - 25; 26 - 50; 51 - 75; 76 - 100
+                return 1;
+            } else if (sb > breaks[1] && sb <= breaks[2]) {
+                return 2;
+            } else if (sb > breaks[2] && sb <= breaks[3]) {
+                return 3;
+            } else {
+                return 4;
+            }
+        }
+
+        function calculateElements()
+        {
+            var page = $(document).height(), viewport = element.height();
+            var calcs = {
+                heights: {
+                    page:       page,
+                    viewport:   viewport,
+                    zone:       Math.round((page - viewport) / 4)
+                },
+                breaks: {}
+            };
+
+            for (var i = 0; i < 4; i++) {
+                var pixels = (calcs.heights.zone * i) + calcs.heights.viewport;
+                calcs.breaks[i] = pixels;
+            }
+            return calcs;
+        }
+
+        function hasSupport()
+        {
+            if (!Utils.isDefined(window.jQuery)) {
+                Debugger.warn('ScrollTracker()', 'jQuery must be loaded to enable scroll tracking. Tracking disabled.');
+                return false;
+            }
+
+            var required = '1.4.3';
+            if (versionIsAtLeast(required)) {
+                return true;
+            }
+
+            Debugger.warn('ScrollTracker()', 'jQuery must be at least version ' + required + '. Tracking disabled.');
+            return false;
+        }
+
+        function versionIsAtLeast(requested)
+        {
+            var
+                requested = extractVersion(requested)
+                actual = extractVersion(window.jQuery.fn.jquery)
+            ;
+            for (var i = 0; i < 3; i++) {
+
+                if (requested[i] == actual[i]) {
+                    continue;
+                }
+                return requested[i] < actual[i];
+            }
+            return true;
+        }
+
+        function extractVersion(version)
+        {
+            var version = version.split('.');
+            if (version.length < 1) {
+                throw 'The version must contain at least one part, e.g. "1" or "1.0", etc.';
+            }
+            var extracted = [];
+            for (var i = 0; i < 3; i++) {
+                extracted[i] = Utils.isDefined(version[i]) ? parseInt(version[i]) : 0;
+            }
+            return extracted;
+        }
+    }
 
     /**
      *
@@ -37,7 +198,8 @@ var Sapience = (function() {
                 windowRes: Utils.getWindowSize()
             },
             previousEvents = {},
-            visitor, session, identity
+            visitor, session, identity, campaign,
+            scroll
         ;
 
         function init()
@@ -45,6 +207,7 @@ var Sapience = (function() {
             visitor = getCookie('visitor');
             session = getCookie('session');
             identity = getCookie('identity');
+            campaign = getCampaign();
 
             refreshCookies();
         }
@@ -59,6 +222,13 @@ var Sapience = (function() {
             logEvent(new Event(action, entity, relatedTo, data));
         }
 
+        function trackScroll(entity)
+        {
+            if (!Utils.isDefined(scroll)) {
+                scroll = new ScrollTracker(config.get('scrollSelector'));
+            }
+            scroll.bind(entity, elementId);
+        }
 
         function resendLastEvent(action)
         {
@@ -108,6 +278,8 @@ var Sapience = (function() {
                 session: session
             };
 
+            r.session.campaign = hasCampaign() ? campaign : null;
+
             r.session.visitorId = Utils.isDefined(visitor.id) ? visitor.id : null;
             r.session.customerId = (hasIdentity() && Utils.isDefined(identity.id)) ? identity.id : null;
             r.session.env = env;
@@ -121,6 +293,9 @@ var Sapience = (function() {
                 setSession(createNewSession());
                 if (hasIdentity()) {
                     setIdentity(identity);
+                }
+                if (hasCampaign()) {
+                    setCampaign(campaign);
                 }
             } else {
 
@@ -145,16 +320,25 @@ var Sapience = (function() {
 
                 setVisitor(v);
 
+                var s;
                 if (!hasSession()) {
-                    var s = createNewSession();
+                    s = createNewSession();
                 } else if (sessionEndOfDay(session)) {
                     Debugger.info('Tracker()', 'Session end of day reached. Expire and create new.');
-                    var s = createNewSession();
+                    s = createNewSession();
                 } else if (sessionUpdateReferringIdentity(session)) {
                     Debugger.info('Tracker()', 'A new referring identity was detected. Create new session.');
-                    var s = createNewSession();
+                    s = createNewSession();
                 } else {
-                    var s = session;
+                    s = session;
+                }
+
+                if (hasCampaign()) {
+                    if (hasCampaignCookie() && !campaignsMatch(campaign, getCampaignFromCookie())) {
+                        Debugger.info('Tracker()', 'Campaigns have changed. Create new session and update campaign cookie.');
+                        s = createNewSession();
+                    }
+                    setCampaign(campaign);
                 }
                 setSession(s);
             }
@@ -210,6 +394,12 @@ var Sapience = (function() {
             setCookie('identity', value);
         }
 
+        function setCampaign(value)
+        {
+            campaign = value;
+            setCookie('campaign', value);
+        }
+
         function hasVisitor()
         {
             return Utils.isDefined(visitor) && null !== visitor;
@@ -223,6 +413,11 @@ var Sapience = (function() {
         function hasIdentity()
         {
             return Utils.isDefined(identity) && null !== identity;
+        }
+
+        function hasCampaign()
+        {
+            return Utils.isDefined(campaign) && null !== campaign;
         }
 
         function hasReferringIdentityId()
@@ -276,6 +471,100 @@ var Sapience = (function() {
         function sessionHasReferringIdentity(session)
         {
             return Utils.isDefined(session.rcid) && null !== session.rcid;
+        }
+
+        function getCampaign()
+        {
+            var
+                configCampaign = getCampaignFromConfig(),
+                queryCampaign  = getCampaignFromQuery(),
+                cookieCampaign = getCampaignFromCookie()
+            ;
+            if (null !== configCampaign) {
+                return configCampaign;
+            }
+            if (null !== queryCampaign) {
+                return queryCampaign;
+            }
+            if (null !== cookieCampaign) {
+                return cookieCampaign;
+            }
+            return null;
+        }
+
+        function getCampaignFromConfig()
+        {
+            var campaign = config.get('campaign');
+
+            if (campaignObjValid(campaign)) {
+                return cleanCampaign(campaign);
+            }
+            return null;
+        }
+
+        function getCampaignFromQuery()
+        {
+            var requestCampaign = {}, keys = config.get('campaignKeys');
+
+            for (key in keys) {
+                requestCampaign[key] = Utils.url(window.location.href).getQueryParam(keys[key]);
+            }
+
+            if (campaignObjValid(requestCampaign)) {
+                return cleanCampaign(requestCampaign);
+            }
+            return null;
+        }
+
+        function getCampaignFromCookie()
+        {
+            var cookie = getCookie('campaign');
+            if (cookie === null) return null;
+            if (campaignObjValid(cookie)) {
+                return cleanCampaign(cookie);
+            }
+            return null;
+        }
+
+        function hasCampaignCookie()
+        {
+            return null !== getCampaignFromCookie();
+        }
+
+        function campaignsMatch(c1, c2)
+        {
+            for (var key in config.get('campaignKeys')) {
+                if (c1[key] !== c2[key]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function campaignObjValid(obj)
+        {
+            var requiredKeys = ['source', 'medium', 'name'];
+            for (var i in requiredKeys) {
+                var key = requiredKeys[i];
+
+                if (!Utils.isDefined(obj[key])) {
+                    return false;
+                }
+
+                if (null === obj[key]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function cleanCampaign(obj)
+        {
+            var cleaned = {};
+            for (key in config.get('campaignKeys')) {
+                cleaned[key] = Utils.isDefined(obj[key]) ? obj[key] : null;
+            }
+            return cleaned;
         }
 
         /**
@@ -352,6 +641,13 @@ var Sapience = (function() {
             var values = {
                 app: null,
                 baseEndpoint: '/events',
+                campaign: {
+                    source: null,
+                    medium: null,
+                    name: null,
+                    content: null,
+                    keyword: null,
+                },
                 campaignKeys: {
                     source: 'utm_source',
                     medium: 'utm_medium',
@@ -387,6 +683,7 @@ var Sapience = (function() {
                 },
                 referrer: Utils.getReferrer(),
                 referringIdentityKey: 'sapience_ri',
+                scrollSelector: null,
                 trackerDomain: 'http://olytics.cygnus.com',
                 useCookieDomain: false
             };
@@ -538,6 +835,28 @@ var Sapience = (function() {
                     Debugger.info('Config()', 'Campaign key "' + key + '" now set to "' + value + '"');
                     return this;
                 },
+                setCampaignValue: function (key, value) {
+                    if (!Utils.isDefined(values.campaign[key])) {
+                        Debugger.warn('Config()', 'Unable to set the campaign value. The key "' + key + '" does not exist.');
+                        return this;
+                    }
+                    if (!Utils.isString(value)) {
+                        Debugger.warn('Config()', 'Unable to set the campaign value.');
+                        return this;
+                    }
+                    values.campaign[key] = value;
+                    Debugger.info('Config()', 'Campaign value "' + value + '" now set to "' + key + '"');
+                    return this;
+                },
+                setScrollSelector: function (selector) {
+                    if (!Utils.isString(selector)) {
+                        Debugger.warn('Config()', 'Unable to set the scroll selector value.');
+                        return this;
+                    }
+                    values.scrollSelector = selector;
+                    Debugger.info('Config()', 'Scroll selector "' + selector + '" set.');
+                    return this;
+                },
                 get: function(key) {
                     if (values.hasOwnProperty(key)) {
                         return values[key];
@@ -581,6 +900,10 @@ var Sapience = (function() {
             },
             _trackPageview: function() {
                 trackPageview();
+                return this;
+            },
+            _trackScroll: function (entity) {
+                trackScroll(entity);
                 return this;
             },
             _resendLastEvent: function(action) {

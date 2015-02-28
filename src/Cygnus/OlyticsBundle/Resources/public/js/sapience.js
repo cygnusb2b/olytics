@@ -9,6 +9,13 @@ if (typeof String.prototype.trim !== 'function') {
     }
 }
 
+if (typeof document.hasFocus !== 'function') {
+    // Opera lacks hasFocus support. Simply default to true.
+    document.hasFocus = function() {
+        return true;
+    }
+}
+
 /**
  *
  */
@@ -24,6 +31,88 @@ var Sapience = (function() {
 
     _sapient = new Proxy();
 
+    function PingTracker()
+    {
+        var bound = [];
+        var focusInterval = 2000;
+        var pingInterval = 10000;
+
+        init();
+
+        this.bind = function(entity) {
+            Debugger.info('PingTracker()', 'Bound entity to ping.', entity);
+            bound.push(entity);
+            return this;
+        }
+
+        function init()
+        {
+            initFocusInterval();
+            initPingInterval();
+        }
+
+        function initFocusInterval()
+        {
+            var timer = 0;
+            var hadFocus = document.hasFocus();
+
+            var time = {
+                focused: 0,
+                blurred: 0,
+                thisDuration: 0,
+            };
+
+            setInterval(function() {
+                var seconds = focusInterval / 1000;
+                timer += seconds;
+                if (hadFocus !== document.hasFocus()) {
+                    // Focus change
+                    if (hadFocus) {
+                        // Lost focus
+                        time.focused += timer;
+                    } else {
+                        // Gained focus
+                        time.blurred += timer;
+                    }
+                    time.thisDuration = timer;
+                    timer = 0;
+
+                    var type = (hadFocus) ? 'lost focus' : 'gained focus';
+                    Debugger.info('PingTracker()', 'The browser window has ' + type + '.', time);
+                    hadFocus = document.hasFocus();
+                }
+            }, focusInterval);
+        }
+
+        function initPingInterval()
+        {
+            (function ping() {
+                setTimeout(function() {
+
+                    if (!document.hasFocus()) {
+                        Debugger.warn('PingTracker()', 'Ping interval of ' + Math.round(pingInterval / 1000) + 's reached, but window is out of focus.');
+                        ping();
+                        return;
+                    }
+
+                    Debugger.info('PingTracker()', 'Ping interval of ' + Math.round(pingInterval / 1000) + 's reached.');
+
+                    // @todo This should be bound directly to an AJAX call to ensure requests don't get 'stuck'
+                    sendEvents();
+                    ping();
+
+                }, pingInterval);
+            })();
+        }
+
+        function sendEvents()
+        {
+            for (var i in bound) {
+                _sapient.push(['_trackEvent', 'ping', bound[i]]);
+            }
+        }
+    }
+
     function ScrollTracker(selector)
     {
         var element = Utils.isString(selector) ? jQuery(selector) : jQuery(window);
@@ -33,8 +122,8 @@ var Sapience = (function() {
         init();
 
         this.bind = function(entity) {
+            Debugger.info('ScrollTracker()', 'Bound entity to scroll.', entity);
             bound.push(entity);
-            console.log(bound);
             return this;
         }
 
@@ -199,7 +288,7 @@ var Sapience = (function() {
             },
             previousEvents = {},
             visitor, session, identity, campaign,
-            scroll
+            scroll, ping
         ;
 
         function init()
@@ -227,8 +316,15 @@ var Sapience = (function() {
             if (!Utils.isDefined(scroll)) {
                 scroll = new ScrollTracker(config.get('scrollSelector'));
             }
-            scroll.bind(entity, elementId);
             scroll.bind(entity);
+        }
+
+        function trackPing(entity)
+        {
+            if (!Utils.isDefined(ping)) {
+                ping = new PingTracker();
+            }
+            ping.bind(entity);
         }
 
         function resendLastEvent(action)
@@ -905,6 +1001,10 @@ var Sapience = (function() {
             },
             _trackScroll: function (entity) {
                 trackScroll(entity);
+                return this;
+            },
+            _trackPing: function (entity) {
+                trackPing(entity);
                 return this;
             },
             _resendLastEvent: function(action) {

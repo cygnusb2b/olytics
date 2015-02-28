@@ -228,6 +228,7 @@ var Sapience = (function() {
                 scroll = new ScrollTracker(config.get('scrollSelector'));
             }
             scroll.bind(entity, elementId);
+            scroll.bind(entity);
         }
 
         function resendLastEvent(action)

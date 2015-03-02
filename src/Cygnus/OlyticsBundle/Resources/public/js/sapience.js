@@ -296,6 +296,37 @@ var Sapience = (function() {
         }
     }
 
+    function UnloadTracker()
+    {
+        var bound = [];
+
+        init();
+
+        this.bind = function(entity) {
+            Debugger.info('UnloadTracker()', 'Bound entity to window unload.', entity);
+            bound.push(entity);
+            return this;
+        }
+
+        function init()
+        {
+            window.addEventListener("unload", function (e) {
+                sendEvents();
+                // e.returnValue = null;
+                // event.preventDefault();
+
+                // e.preventDefault();
+            });
+        }
+
+        function sendEvents()
+        {
+            for (var i in bound) {
+                _sapient.push(['_trackEvent', 'unload', bound[i]]);
+            }
+        }
+    }
+
     /**
      *
      */
@@ -311,7 +342,8 @@ var Sapience = (function() {
             },
             previousEvents = {},
             visitor, session, identity, campaign,
-            focus, ping, scroll
+            focus, ping, scroll, unload,
+            specialActions = ['scroll', 'focus', 'unload']
         ;
 
         function init()
@@ -334,6 +366,23 @@ var Sapience = (function() {
             logEvent(new Event(action, entity, relatedTo, data));
         }
 
+        function trackAlso(actions, entity)
+        {
+            if (Utils.isString(actions)) {
+                actions = [actions];
+            } else if (!Utils.isArray(actions)) {
+                Debugger.error('Tracker()', 'Unable to assign additional actions to track. Actions must be an array or string.');
+                return;
+            }
+
+            for (var i in specialActions) {
+                if (0 <= actions.indexOf(specialActions[i])) {
+                    var method = '_track' + specialActions[i].toLowerCase().charAt(0).toUpperCase() + specialActions[i].slice(1);
+                    Tracker[method](entity);
+                }
+            }
+        }
+
         function trackScroll(entity)
         {
             if (!Utils.isDefined(scroll)) {
@@ -354,6 +403,17 @@ var Sapience = (function() {
                 entity = getPageViewEntity();
             }
             focus.bind(entity);
+        }
+
+        function trackUnload(entity)
+        {
+            if (!Utils.isDefined(unload)) {
+                unload = new UnloadTracker();
+            }
+            if (!Utils.isDefined(entity)) {
+                entity = getPageViewEntity();
+            }
+            unload.bind(entity);
         }
 
         function resendLastEvent(action)
@@ -609,11 +669,11 @@ var Sapience = (function() {
             if (null !== queryCampaign) {
                 return queryCampaign;
             }
-            if (null !== configCampaign) {
-                return configCampaign;
-            }
             if (null !== cookieCampaign) {
                 return cookieCampaign;
+            }
+            if (null !== configCampaign) {
+                return configCampaign;
             }
             return null;
         }
@@ -1024,6 +1084,10 @@ var Sapience = (function() {
                 trackEvent(action, entity, relatedTo, data);
                 return this;
             },
+            _trackAlso: function (actions, entity) {
+                trackAlso(actions, entity);
+                return this;
+            },
             _trackPageview: function() {
                 trackPageview();
                 return this;
@@ -1034,6 +1098,10 @@ var Sapience = (function() {
             },
             _trackFocus: function (entity) {
                 trackFocus(entity);
+                return this;
+            },
+            _trackUnload: function (entity) {
+                trackUnload(entity);
                 return this;
             },
             _resendLastEvent: function(action) {

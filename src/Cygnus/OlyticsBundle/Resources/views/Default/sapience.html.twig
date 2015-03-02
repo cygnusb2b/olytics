@@ -41,10 +41,7 @@
              var sampleEntity = {type: 'content', clientId: 1234};
 
              _sapient.push(['_trackEvent', 'view', sampleEntity]);
-             _sapient.push(['_trackScroll', sampleEntity]);
-             _sapient.push(['_trackFocus', sampleEntity]);
-
-             _sapient.push(['_trackPageview']);
+             _sapient.push(['_trackAlso', ['scroll', 'focus', 'unload'], sampleEntity]);
 
         </script>
 
@@ -82,3 +79,5 @@
     </body>
 
 </html>
+
+

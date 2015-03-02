@@ -609,11 +609,11 @@ var Sapience = (function() {
             if (null !== queryCampaign) {
                 return queryCampaign;
             }
-            if (null !== configCampaign) {
-                return configCampaign;
-            }
             if (null !== cookieCampaign) {
                 return cookieCampaign;
+            }
+            if (null !== configCampaign) {
+                return configCampaign;
             }
             return null;
         }

@@ -16,6 +16,12 @@ class JsController extends Controller
 
     protected $files = ['uuid.js', 'json2.js', 'olytics.js'];
 
+    public function sapienceAction()
+    {
+        $this->files = ['uuid.js', 'json2.js', 'sapience.js'];
+        return $this->indexAction();
+    }
+
     public function indexAction()
     {
         $kernel = $this->get('kernel');

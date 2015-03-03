@@ -35,17 +35,27 @@ var Sapience = (function() {
     {
         var bound = [];
         var interval = 2000;
-
-        init();
+        var initialized = false;
 
         this.bind = function(entity) {
-            Debugger.info('FocusTracker()', 'Bound entity to window focus.', entity);
+            init();
             bound.push(entity);
+            Debugger.info('FocusTracker()', 'Bound entity to window focus.', entity);
+            return this;
+        }
+
+        this.clear = function() {
+            bound = [];
+            Debugger.info('FocusTracker()', 'All bound entities have been cleared.');
             return this;
         }
 
         function init()
         {
+            if (true === initialized) {
+                return;
+            }
+
             var timer = 0;
             var hadFocus = document.hasFocus();
 
@@ -84,6 +94,8 @@ var Sapience = (function() {
 
                 }
             }, interval);
+
+            initialized = true;
         }
 
         function sendEvents(action, data)
@@ -104,6 +116,12 @@ var Sapience = (function() {
         this.bind = function(entity) {
             Debugger.info('FocusTracker()', 'Bound entity to window focus.', entity);
             bound.push(entity);
+            return this;
+        }
+
+        this.clear = function() {
+
+            bound = [];
             return this;
         }
 
@@ -141,18 +159,28 @@ var Sapience = (function() {
         var element = jQuery(selector);
         var bound = [];
         var delta = 5;
-
-        init();
+        var initialized = false;
 
         this.bind = function(entity) {
-            Debugger.info('ScrollTracker()', 'Bound entity to scroll.', entity);
+            init();
             bound.push(entity);
+            Debugger.info('ScrollTracker()', 'Bound entity to scroll.', entity);
+            return this;
+        }
+
+        this.clear = function() {
+            Debugger.info('ScrollTracker()', 'All bound entities have been cleared.');
+            bound = [];
             return this;
         }
 
         function init()
         {
             if (!hasSupport()) {
+                return;
+            }
+
+            if (true === initialized) {
                 return;
             }
 
@@ -201,6 +229,7 @@ var Sapience = (function() {
                 }
                 lastScrollTop = st;
             }
+            initialized = true;
         }
 
         function sendEvents(breakpoint, direction)
@@ -299,24 +328,30 @@ var Sapience = (function() {
     function UnloadTracker()
     {
         var bound = [];
-
-        init();
+        var initialized = false;
 
         this.bind = function(entity) {
-            Debugger.info('UnloadTracker()', 'Bound entity to window unload.', entity);
+            init();
             bound.push(entity);
+            Debugger.info('UnloadTracker()', 'Bound entity to window unload.', entity);
+            return this;
+        }
+
+        this.clear = function() {
+            bound = [];
+            Debugger.info('UnloadTracker()', 'All bound entities have been cleared.');
             return this;
         }
 
         function init()
         {
+            if (true === initialized) {
+                return;
+            }
             window.addEventListener("unload", function (e) {
                 sendEvents();
-                // e.returnValue = null;
-                // event.preventDefault();
-
-                // e.preventDefault();
             });
+            initialized = true;
         }
 
         function sendEvents()
@@ -342,7 +377,7 @@ var Sapience = (function() {
             },
             previousEvents = {},
             visitor, session, identity, campaign,
-            focus, ping, scroll, unload,
+            focus, scroll, unload,
             specialActions = ['scroll', 'focus', 'unload']
         ;
 
@@ -383,11 +418,15 @@ var Sapience = (function() {
             }
         }
 
+        function clearBoundEntities()
+        {
+            focus.clear();
+            scroll.clear();
+            unload.clear();
+        }
+
         function trackScroll(entity)
         {
-            if (!Utils.isDefined(scroll)) {
-                scroll = new ScrollTracker(config.get('scrollSelector'));
-            }
             if (!Utils.isDefined(entity)) {
                 entity = getPageViewEntity();
             }
@@ -396,9 +435,6 @@ var Sapience = (function() {
 
         function trackFocus(entity)
         {
-            if (!Utils.isDefined(focus)) {
-                focus = new FocusTracker();
-            }
             if (!Utils.isDefined(entity)) {
                 entity = getPageViewEntity();
             }
@@ -407,9 +443,6 @@ var Sapience = (function() {
 
         function trackUnload(entity)
         {
-            if (!Utils.isDefined(unload)) {
-                unload = new UnloadTracker();
-            }
             if (!Utils.isDefined(entity)) {
                 entity = getPageViewEntity();
             }
@@ -1104,11 +1137,19 @@ var Sapience = (function() {
                 trackUnload(entity);
                 return this;
             },
+            _clearBoundEntities: function () {
+                clearBoundEntities();
+                return this;
+            },
             _resendLastEvent: function(action) {
                 resendLastEvent(action);
                 return this;
             },
-            config: config
+            _initExtraTrackers: function () {
+                focus  = new FocusTracker();
+                unload = new UnloadTracker();
+                scroll = new ScrollTracker(config.get('scrollSelector'));
+            }
         }
     }
 
@@ -1777,25 +1818,24 @@ var Sapience = (function() {
      */
     function init()
     {
-        // Fire debug enable/disable first
-        for (var i = 0; i < _sapient.length; i++) {
-            if (_sapient[i][0] === '_debug') {
+        // Re-order the queued commands to fire debug, then config first.
+        var order = ['_debug', '_config'];
+        for (var n in order) {
+            for (var i = 0; i < _sapient.length; i++) {
+                if (!Utils.isDefined(_sapient[i]) || _sapient[i][0] !== order[n]) {
+                    continue;
+                }
                 apply(_sapient[i]);
-                _sapient.splice(i, 1);
+                delete _sapient[i];
             }
         }
 
-        // Fire all config options next
-        for (var i = 0; i < _sapient.length; i++) {
-            if (_sapient[i][0] === '_config') {
-                apply(_sapient[i]);
-                _sapient.splice(i, 1);
-            }
-        }
+        // Continue initialization of the object, now that config is set
+        Tracker._initExtraTrackers();
 
-        // Fire remaining actions
+        // Fire remaining commnds
         for (var i = 0; i < _sapient.length; i++) {
-            if (_sapient[i]) {
+            if (Utils.isDefined(_sapient[i])) {
                 apply(_sapient[i]);
             }
         }
@@ -1804,8 +1844,8 @@ var Sapience = (function() {
     /**
      *
      */
-    function apply()
-    {
+
+    {function apply()
         var i, f, parameterArray;
 
         for (var i = 0; i < arguments.length; i++)  {

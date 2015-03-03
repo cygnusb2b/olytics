@@ -1844,8 +1844,8 @@ var Sapience = (function() {
     /**
      *
      */
-
-    {function apply()
+    function apply()
+    {
         var i, f, parameterArray;
 
         for (var i = 0; i < arguments.length; i++)  {

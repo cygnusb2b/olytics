@@ -14,34 +14,20 @@
         {% endblock %}
 
         <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        <script type="text/javascript" src="/sapience.js"></script>
 
         <script type="text/javascript">
-            var _sapient = _sapient || [];
+            Sapience.setDebug(true);
+            Sapience.Config
+                .setApp('brevity')
+                .setEndpoint('/acbm/fcp')
+                .setTrackerDomain('http://dev.olytics.cygnus.com')
+            ;
 
-            _sapient.push(['_debug', true]);
-            _sapient.push(['_config', 'setEndpoint', '/acbm/fcp']);
-            _sapient.push(['_config', 'setApp', 'brevity']);
-            _sapient.push(['_config', 'setTrackerDomain', 'http://dev.olytics.cygnus.com']);
-            _sapient.push(['_config', 'setScrollSelector', window]); // Provides the element to detect scroll on. Default window
-            _sapient.push(['_config', 'setDisabled', false]);
-
-
-
-            (function() {
-                var d=document,
-                 g=d.createElement('script'),
-                 s=d.getElementsByTagName('script')[0];
-                 g.type='text/javascript';
-                 g.defer=true;
-                 g.async=true;
-                 g.src="/sapience.js";
-                 s.parentNode.insertBefore(g,s);
-             })();
-
-             var sampleEntity = {type: 'content', clientId: 1234};
-
-             _sapient.push(['_trackEvent', 'view', sampleEntity]);
-             _sapient.push(['_trackAlso', ['scroll', 'focus', 'unload'], sampleEntity]);
+            var sampleEntity = {type: 'content', clientId: 1234};
+            Sapience.Tracker.send('view', sampleEntity);
+            Sapience.Tracker.Focus.bind(sampleEntity);
+            Sapience.Tracker.Scroll.bind(sampleEntity);
 
         </script>
 

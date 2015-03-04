@@ -1,470 +1,100 @@
+(function(Sapience, undefined) {
 
-if (typeof _sapient !== 'object')  {
-    var _sapient = [];
-}
+    'use strict';
 
-if (typeof String.prototype.trim !== 'function') {
-    String.prototype.trim = function() {
-        return this.replace(/^\s+|\s+$/g, '');
-    }
-}
+    setCompatibility();
 
-if (typeof document.hasFocus !== 'function') {
-    // Opera lacks hasFocus support. Simply default to true.
-    document.hasFocus = function() {
-        return true;
-    }
-}
+    // Private Properties
+    var Utils           = new Utils();
+    var Debugger        = new Debugger();
+    var Config          = new Config();
+    var CookieManager   = new CookieManager();
+    var CampaignManager = new CampaignManager();
+    var Tracker         = new Tracker();
 
-/**
- *
- */
-var Sapience = (function() {
+    // Public Properties
+    Sapience.Config             = Config;
+    Sapience.CampaignManager    = CampaignManager;
+    Sapience.Tracker            = Tracker;
 
-    var
-        Utils       = new Utils(),
-        Debugger    = new Debugger(),
-        Tracker     = new Tracker()
-    ;
-
-    init();
-
-    _sapient = new Proxy();
-
-    function FocusTracker()
-    {
-        var bound = [];
-        var interval = 2000;
-
-        init();
-
-        this.bind = function(entity) {
-            Debugger.info('FocusTracker()', 'Bound entity to window focus.', entity);
-            bound.push(entity);
-            return this;
-        }
-
-        function init()
-        {
-            var timer = 0;
-            var hadFocus = document.hasFocus();
-
-            var time = {
-                focused: 0,
-                blurred: 0,
-                thisDuration: 0,
-            };
-
-            setInterval(function() {
-
-                var seconds = interval / 1000;
-                var action, eventData;
-
-                timer += seconds;
-                if (hadFocus !== document.hasFocus()) {
-                    // Focus change
-                    if (hadFocus) {
-                        // Lost focus
-                        time.focused += timer;
-                        action = 'focusout';
-                    } else {
-                        // Gained focus
-                        time.blurred += timer;
-                        action = 'focusin';
-                        eventData = {idleSeconds: timer};
-                    }
-                    time.thisDuration = timer;
-                    timer = 0;
-
-                    var type = (hadFocus) ? 'lost focus' : 'gained focus';
-                    Debugger.info('FocusTracker()', 'The browser window has ' + type + '.', time);
-                    hadFocus = document.hasFocus();
-
-                    sendEvents(action, eventData);
-
-                }
-            }, interval);
-        }
-
-        function sendEvents(action, data)
-        {
-            for (var i in bound) {
-                _sapient.push(['_trackEvent', action, bound[i], undefined, data]);
-            }
-        }
+    // Public Functions
+    Sapience.setDebug = function(bit) {
+        bit = Boolean(bit);
+        if (true === bit) { Debugger.enable() } else { Debugger.disable() };
+        return Sapience;
     }
 
-    function PingTracker()
-    {
-        var bound = [];
-        var interval = 10000;
+    // Private Functions
 
-        init();
-
-        this.bind = function(entity) {
-            Debugger.info('FocusTracker()', 'Bound entity to window focus.', entity);
-            bound.push(entity);
-            return this;
-        }
-
-        function init()
-        {
-            (function ping() {
-                setTimeout(function() {
-
-                    if (!document.hasFocus()) {
-                        Debugger.warn('PingTracker()', 'Ping interval of ' + Math.round(interval / 1000) + 's reached, but window is out of focus.');
-                        ping();
-                        return;
-                    }
-
-                    Debugger.info('PingTracker()', 'Ping interval of ' + Math.round(interval / 1000) + 's reached.');
-
-                    // @todo This should be bound directly to an AJAX call to ensure requests don't get 'stuck'
-                    sendEvents();
-                    ping();
-
-                }, interval);
-            })();
-        }
-
-        function sendEvents()
-        {
-            for (var i in bound) {
-                _sapient.push(['_trackEvent', 'ping', bound[i]]);
-            }
-        }
-    }
-
-    function ScrollTracker(selector)
-    {
-        var element = jQuery(selector);
-        var bound = [];
-        var delta = 5;
-
-        init();
-
-        this.bind = function(entity) {
-            Debugger.info('ScrollTracker()', 'Bound entity to scroll.', entity);
-            bound.push(entity);
-            return this;
-        }
-
-        function init()
-        {
-            if (!hasSupport()) {
-                return;
-            }
-
-            var didScroll = false;
-            var lastScrollTop = 0;
-            var calcs = calculateElements();
-
-            element.on('resize', function (e) {
-                Debugger.info('ScrollTracker()', 'Window resized. Recalculated breakpoints.');
-                calcs = calculateElements();
-            });
-
-            element.on('scroll', function (e) {
-                didScroll = true;
-            });
-
-            setInterval(function() {
-                if (didScroll && bound.length > 0) {
-                    hasScrolled();
-                    didScroll = false;
-                }
-            }, 250);
-
-            var currentBreak;
-            var lastBreak;
-
-            function hasScrolled() {
-                var
-                    breaks = calcs.breaks,
-                    st = element.scrollTop(),
-                    sb = st + calcs.heights.viewport
-                ;
-
-                // Make sure they scroll more than delta
-                if (Math.abs(lastScrollTop - st) <= delta) {
-                    return;
-                }
-
-                currentBreak = getCurrentBreak(sb, breaks);
-                var direction = st > lastScrollTop ? 'down' : 'up';
-
-                if (currentBreak !== lastBreak && null !== currentBreak) {
-                    Debugger.info('ScrollTracker()', 'Scroll breakpoint ' + currentBreak + ' of 4 reached. Direction: ' + direction);
-                    sendEvents(currentBreak, direction);
-                    lastBreak = currentBreak;
-                }
-                lastScrollTop = st;
-            }
-        }
-
-        function sendEvents(breakpoint, direction)
-        {
-            var data = {
-                top: (breakpoint - 1) * 25 + 1,
-                bottom: breakpoint * 25,
-                direction: direction
-            };
-            for (var i in bound) {
-                _sapient.push(['_trackEvent', 'scroll', bound[i], undefined, data]);
-            }
-        }
-
-        function getCurrentBreak(sb, breaks)
-        {
-            if (sb <= breaks[0]) {
-                return null;
-            } else if (sb > breaks[0] && sb <= breaks[1]) {
-                // 1 - 25; 26 - 50; 51 - 75; 76 - 100
-                return 1;
-            } else if (sb > breaks[1] && sb <= breaks[2]) {
-                return 2;
-            } else if (sb > breaks[2] && sb <= breaks[3]) {
-                return 3;
-            } else {
-                return 4;
-            }
-        }
-
-        function calculateElements()
-        {
-            var page = $(document).height(), viewport = element.height();
-            var calcs = {
-                heights: {
-                    page:       page,
-                    viewport:   viewport,
-                    zone:       Math.round((page - viewport) / 4)
-                },
-                breaks: {}
-            };
-
-            for (var i = 0; i < 4; i++) {
-                var pixels = (calcs.heights.zone * i) + calcs.heights.viewport;
-                calcs.breaks[i] = pixels;
-            }
-            return calcs;
-        }
-
-        function hasSupport()
-        {
-            if (!Utils.isDefined(window.jQuery)) {
-                Debugger.warn('ScrollTracker()', 'jQuery must be loaded to enable scroll tracking. Tracking disabled.');
-                return false;
-            }
-
-            var required = '1.4.3';
-            if (versionIsAtLeast(required)) {
-                return true;
-            }
-
-            Debugger.warn('ScrollTracker()', 'jQuery must be at least version ' + required + '. Tracking disabled.');
-            return false;
-        }
-
-        function versionIsAtLeast(requested)
-        {
-            var
-                requested = extractVersion(requested)
-                actual = extractVersion(window.jQuery.fn.jquery)
-            ;
-            for (var i = 0; i < 3; i++) {
-
-                if (requested[i] == actual[i]) {
-                    continue;
-                }
-                return requested[i] < actual[i];
-            }
-            return true;
-        }
-
-        function extractVersion(version)
-        {
-            var version = version.split('.');
-            if (version.length < 1) {
-                throw 'The version must contain at least one part, e.g. "1" or "1.0", etc.';
-            }
-            var extracted = [];
-            for (var i = 0; i < 3; i++) {
-                extracted[i] = Utils.isDefined(version[i]) ? parseInt(version[i]) : 0;
-            }
-            return extracted;
-        }
-    }
-
-    function UnloadTracker()
-    {
-        var bound = [];
-
-        init();
-
-        this.bind = function(entity) {
-            Debugger.info('UnloadTracker()', 'Bound entity to window unload.', entity);
-            bound.push(entity);
-            return this;
-        }
-
-        function init()
-        {
-            window.addEventListener("unload", function (e) {
-                sendEvents();
-                // e.returnValue = null;
-                // event.preventDefault();
-
-                // e.preventDefault();
-            });
-        }
-
-        function sendEvents()
-        {
-            for (var i in bound) {
-                _sapient.push(['_trackEvent', 'unload', bound[i]]);
-            }
-        }
-    }
-
-    /**
-     *
-     */
     function Tracker()
     {
+        this.Focus  = new Focus();
+        this.Unload = new Unload();
+        this.Scroll = new Scroll(Config.get('scrollSelector'));
+
         var
             appendIdentity = false,
-            config = new Config(),
             env = {
                 res: Utils.getResolution(),
                 tz: Utils.getTimezone(),
                 windowRes: Utils.getWindowSize()
             },
-            previousEvents = {},
-            visitor, session, identity, campaign,
-            focus, ping, scroll, unload,
-            specialActions = ['scroll', 'focus', 'unload']
+            visitor, session, identity, campaign
         ;
+
+        this.send = function(action, entity, relatedTo, data)
+        {
+            if (Config.get('disabled')) {
+                Debugger.error('Tracker()', 'The tracker is currently disabled. No events will fire.');
+                return this;
+            }
+
+            if (!Config.isValid()) {
+                Debugger.error('Tracker()', 'The tracker configuration is invald. No events will fire.');
+                return this;
+            }
+
+            var e = new Event(action, entity, relatedTo, data);
+            if (e.isValid()) {
+                init();
+                var request = new Request(createRequestObject(e), getTrackerUrl());
+                request.send();
+            }
+            return this;
+        }
+
+        this.clearBoundEntities = function()
+        {
+            Focus.clear();
+            Scroll.clear();
+            Unload.clear();
+            return this;
+        }
 
         function init()
         {
-            visitor = getCookie('visitor');
-            session = getCookie('session');
-            identity = getCookie('identity');
-            campaign = getCampaign();
-
+            visitor     = CookieManager.get('visitor');
+            session     = CookieManager.get('session');
+            identity    = CookieManager.get('identity');
+            campaign    = CampaignManager.get();
             refreshCookies();
         }
 
         function getTrackerUrl()
         {
-            return config.get('trackerDomain') + config.get('baseEndpoint') + config.get('endpoint');
-        }
-
-        function trackEvent(action, entity, relatedTo, data)
-        {
-            logEvent(new Event(action, entity, relatedTo, data));
-        }
-
-        function trackAlso(actions, entity)
-        {
-            if (Utils.isString(actions)) {
-                actions = [actions];
-            } else if (!Utils.isArray(actions)) {
-                Debugger.error('Tracker()', 'Unable to assign additional actions to track. Actions must be an array or string.');
-                return;
-            }
-
-            for (var i in specialActions) {
-                if (0 <= actions.indexOf(specialActions[i])) {
-                    var method = '_track' + specialActions[i].toLowerCase().charAt(0).toUpperCase() + specialActions[i].slice(1);
-                    Tracker[method](entity);
-                }
-            }
-        }
-
-        function trackScroll(entity)
-        {
-            if (!Utils.isDefined(scroll)) {
-                scroll = new ScrollTracker(config.get('scrollSelector'));
-            }
-            if (!Utils.isDefined(entity)) {
-                entity = getPageViewEntity();
-            }
-            scroll.bind(entity);
-        }
-
-        function trackFocus(entity)
-        {
-            if (!Utils.isDefined(focus)) {
-                focus = new FocusTracker();
-            }
-            if (!Utils.isDefined(entity)) {
-                entity = getPageViewEntity();
-            }
-            focus.bind(entity);
-        }
-
-        function trackUnload(entity)
-        {
-            if (!Utils.isDefined(unload)) {
-                unload = new UnloadTracker();
-            }
-            if (!Utils.isDefined(entity)) {
-                entity = getPageViewEntity();
-            }
-            unload.bind(entity);
-        }
-
-        function resendLastEvent(action)
-        {
-            if (!previousEvents.hasOwnProperty(action)) {
-                Debugger.warn('Tracker()', 'No previous events found for action "' + action + '"');
-                return;
-            }
-            logEvent(previousEvents[action]);
-        }
-
-        function trackPageview()
-        {
-            trackEvent('view', getPageViewEntity());
-        }
-
-        function getPageViewEntity()
-        {
-            return new Entity('page', '$hash::' + config.get('page').url, config.get('page'));
-        }
-
-        function logEvent(e)
-        {
-            if (config.get('disabled')) {
-                Debugger.error('Tracker()', 'The tracker is currently disabled. No events will fire.');
-                return this;
-            }
-
-            if (!config.isValid()) {
-                Debugger.error('Tracker()', 'The tracker configuration is invald. No events will fire.');
-                return this;
-            }
-
-            init();
-            if (e.isValid()) {
-                var request = new Request(createRequestObject(e), getTrackerUrl());
-                request.send();
-                previousEvents[e.action] = e;
-            }
+            return Config.get('trackerDomain') + Config.get('baseEndpoint') + Config.get('endpoint');
         }
 
         function createRequestObject(e)
         {
             var r = {
-                app: config.get('app'),
+                app: Config.get('app'),
                 appendCustomer: appendIdentity,
                 event: e,
                 session: session
             };
 
-            r.session.campaign = hasCampaign() ? campaign : null;
+            r.session.campaign = campaign || null;
 
             r.session.visitorId = Utils.isDefined(visitor.id) ? visitor.id : null;
             r.session.customerId = (hasIdentity() && Utils.isDefined(identity.id)) ? identity.id : null;
@@ -520,7 +150,7 @@ var Sapience = (function() {
                 }
 
                 if (hasCampaign()) {
-                    if (hasCampaignCookie() && !campaignsMatch(campaign, getCampaignFromCookie())) {
+                    if (CampaignManager.hasCookie() && !CampaignManager.match(campaign, CampaignManager.getCampaignFromCookie())) {
                         Debugger.info('Tracker()', 'Campaigns have changed. Create new session and update campaign cookie.');
                         s = createNewSession();
                     }
@@ -536,7 +166,7 @@ var Sapience = (function() {
                 id: uuid.v4()
             };
 
-            identityId = hasIdentity() ? identity.id : null;
+            var identityId = hasIdentity() ? identity.id : null;
             appendIdentityToVisitor(visitor, identityId);
 
             Debugger.info('Tracker()', 'Created a new visitor with id ' + visitor.id);
@@ -565,25 +195,25 @@ var Sapience = (function() {
         function setVisitor(value)
         {
             visitor = value;
-            setCookie('visitor', value);
+            CookieManager.set('visitor', value);
         }
 
         function setSession(value)
         {
             session = value;
-            setCookie('session', value);
+            CookieManager.set('session', value);
         }
 
         function setIdentity(value)
         {
             identity = value;
-            setCookie('identity', value);
+            CookieManager.set('identity', value);
         }
 
         function setCampaign(value)
         {
             campaign = value;
-            setCookie('campaign', value);
+            CookieManager.set('campaign', value);
         }
 
         function hasVisitor()
@@ -613,7 +243,7 @@ var Sapience = (function() {
 
         function getReferringIdentityId()
         {
-            return Utils.url(window.location.href).getQueryParam(config.get('referringIdentityKey'));
+            return Utils.url(window.location.href).getQueryParam(Config.get('referringIdentityKey'));
         }
 
         function visitorHasIdentityId()
@@ -659,40 +289,274 @@ var Sapience = (function() {
             return Utils.isDefined(session.rcid) && null !== session.rcid;
         }
 
-        function getCampaign()
+        function Unload()
         {
-            var
-                configCampaign = getCampaignFromConfig(),
-                queryCampaign  = getCampaignFromQuery(),
-                cookieCampaign = getCampaignFromCookie()
-            ;
-            if (null !== queryCampaign) {
-                return queryCampaign;
+            var bound = [];
+            var initialized = false;
+
+            this.bind = function(entity) {
+                init();
+                bound.push(entity);
+                Debugger.info('Unload()', 'Bound entity to window unload.', entity);
+                return this;
             }
-            if (null !== cookieCampaign) {
-                return cookieCampaign;
+
+            this.clear = function() {
+                bound = [];
+                Debugger.info('Unload()', 'All bound entities have been cleared.');
+                return this;
             }
-            if (null !== configCampaign) {
-                return configCampaign;
+
+            function init()
+            {
+                if (true === initialized) {
+                    return;
+                }
+                window.addEventListener("unload", function (e) {
+                    sendEvents();
+                });
+                initialized = true;
+            }
+
+            function sendEvents()
+            {
+                for (var i = 0; i < bound.length; i++) {
+                    Tracker.send('unload', bound[i]);
+                }
+            }
+        }
+
+        function Focus()
+        {
+            var bound = [];
+            var interval = 2000;
+            var initialized = false;
+
+            this.bind = function(entity) {
+                init();
+                bound.push(entity);
+                Debugger.info('Focus()', 'Bound entity to window focus.', entity);
+                return this;
+            }
+
+            this.clear = function() {
+                bound = [];
+                Debugger.info('Focus()', 'All bound entities have been cleared.');
+                return this;
+            }
+
+            function init()
+            {
+                if (true === initialized) {
+                    return;
+                }
+
+                var timer = 0;
+                var hadFocus = document.hasFocus();
+
+                var time = {
+                    focused: 0,
+                    blurred: 0,
+                    thisDuration: 0,
+                };
+
+                setInterval(function() {
+
+                    var seconds = interval / 1000;
+                    var action, eventData;
+
+                    timer += seconds;
+                    if (hadFocus !== document.hasFocus()) {
+                        // Focus change
+                        if (hadFocus) {
+                            // Lost focus
+                            time.focused += timer;
+                            action = 'focusout';
+                        } else {
+                            // Gained focus
+                            time.blurred += timer;
+                            action = 'focusin';
+                            eventData = {idleSeconds: timer};
+                        }
+                        time.thisDuration = timer;
+                        timer = 0;
+
+                        var type = (hadFocus) ? 'lost focus' : 'gained focus';
+                        Debugger.info('Focus()', 'The browser window has ' + type + '.', time);
+                        hadFocus = document.hasFocus();
+
+                        sendEvents(action, eventData);
+
+                    }
+                }, interval);
+
+                initialized = true;
+            }
+
+            function sendEvents(action, data)
+            {
+                for (var i = 0; i < bound.length; i++) {
+                    Tracker.send(action, bound[i], undefined, data);
+                }
+            }
+        }
+
+        function Scroll(selector)
+        {
+            var selector = selector;
+            var bound = [];
+            var delta = 5;
+            var initialized = false;
+
+            this.bind = function(entity) {
+                init();
+                bound.push(entity);
+                Debugger.info('Scroll()', 'Bound entity to scroll.', entity);
+                return this;
+            }
+
+            this.clear = function() {
+                Debugger.info('Scroll()', 'All bound entities have been cleared.');
+                bound = [];
+                return this;
+            }
+
+            function init()
+            {
+                if (!hasSupport()) {
+                    return this;
+                }
+
+                if (true === initialized) {
+                    return this;
+                }
+
+                window.jQuery(document).ready(function() {
+                    setTimeout(function () {
+                        var element = window.jQuery(selector);
+                        var didScroll = false;
+                        var lastScrollTop = 0;
+
+                        element.on('scroll', function (e) {
+                            didScroll = true;
+                        });
+
+                        setInterval(function() {
+                            if (didScroll && bound.length > 0) {
+                                hasScrolled();
+                                didScroll = false;
+                            }
+                        }, 250);
+
+                        var currentBreak;
+                        var lastBreak;
+
+                        function hasScrolled() {
+
+                            var vh = Utils.getViewPort().height;
+                            var st = element.scrollTop();
+                            var sb = st + vh;
+
+                            // Make sure they scroll more than delta
+                            if (Math.abs(lastScrollTop - st) <= delta) {
+                                return;
+                            }
+
+                            var currentBreak = Math.round(sb / vh);
+                            var direction = st > lastScrollTop ? 'down' : 'up';
+
+                            if (currentBreak !== lastBreak) {
+                                var percent = Math.round((sb / window.jQuery(document).height()) * 100);
+                                Debugger.info('Scroll()', 'Scroll breakpoint ' + currentBreak + ' reached. Direction: ' + direction + '. Percent: ' + percent);
+                                sendEvents(currentBreak, direction, percent);
+                                lastBreak = currentBreak;
+                            }
+                            lastScrollTop = st;
+                        }
+                    }, 250);
+                });
+                initialized = true;
+            }
+
+            function sendEvents(breakpoint, direction, percent)
+            {
+                var data = {
+                    breakpoint: breakpoint,
+                    percent: percent,
+                    direction: direction
+                };
+                for (var i = 0; i < bound.length; i++) {
+                    Tracker.send('scroll', bound[i], undefined, data);
+                }
+            }
+
+            function hasSupport()
+            {
+                if (!Utils.isDefined(window.jQuery)) {
+                    Debugger.warn('Scroll()', 'jQuery must be loaded to enable scroll tracking. Tracking disabled.');
+                    return false;
+                }
+
+                var required = '1.4.3';
+                if (versionIsAtLeast(required)) {
+                    return true;
+                }
+
+                Debugger.warn('Scroll()', 'jQuery must be at least version ' + required + '. Tracking disabled.');
+                return false;
+            }
+
+            function versionIsAtLeast(requested)
+            {
+                var
+                    requested = extractVersion(requested),
+                    actual = extractVersion(window.jQuery.fn.jquery)
+                ;
+                for (var i = 0; i < 3; i++) {
+
+                    if (requested[i] == actual[i]) {
+                        continue;
+                    }
+                    return requested[i] < actual[i];
+                }
+                return true;
+            }
+
+            function extractVersion(version)
+            {
+                var version = version.split('.');
+                if (version.length < 1) {
+                    throw 'The version must contain at least one part, e.g. "1" or "1.0", etc.';
+                }
+                var extracted = [];
+                for (var i = 0; i < 3; i++) {
+                    extracted[i] = Utils.isDefined(version[i]) ? parseInt(version[i]) : 0;
+                }
+                return extracted;
+            }
+        }
+    }
+
+    function CampaignManager()
+    {
+        this.get = function ()
+        {
+            if (this.hasQueryString()) {
+                return this.getCampaignFromQuery();
+            }
+            if (this.hasCookie()) {
+                return this.getCampaignFromCookie();
+            }
+            if (this.hasConfigured()) {
+                return this.getCampaignFromConfig();
             }
             return null;
         }
 
-        function getCampaignFromConfig()
+        this.getCampaignFromQuery = function()
         {
-            var campaign = config.get('campaign');
-
-            if (campaignObjValid(campaign)) {
-                return cleanCampaign(campaign);
-            }
-            return null;
-        }
-
-        function getCampaignFromQuery()
-        {
-            var requestCampaign = {}, keys = config.get('campaignKeys');
-
-            for (key in keys) {
+            var requestCampaign = {}, keys = getCampaignKeys();
+            for (var key in keys) {
                 requestCampaign[key] = Utils.url(window.location.href).getQueryParam(keys[key]);
             }
 
@@ -702,9 +566,9 @@ var Sapience = (function() {
             return null;
         }
 
-        function getCampaignFromCookie()
+        this.getCampaignFromCookie = function()
         {
-            var cookie = getCookie('campaign');
+            var cookie = CookieManager.get('campaign');
             if (cookie === null) return null;
             if (campaignObjValid(cookie)) {
                 return cleanCampaign(cookie);
@@ -712,14 +576,37 @@ var Sapience = (function() {
             return null;
         }
 
-        function hasCampaignCookie()
+        this.getCampaignFromConfig = function()
         {
-            return null !== getCampaignFromCookie();
+            var campaign = Config.get('campaign');
+            if (campaignObjValid(campaign)) {
+                return cleanCampaign(campaign);
+            }
+            return null;
         }
 
-        function campaignsMatch(c1, c2)
+        this.hasQueryString = function()
         {
-            for (var key in config.get('campaignKeys')) {
+            return null !== this.getCampaignFromQuery();
+        }
+
+        this.hasCookie = function()
+        {
+            return null !== this.getCampaignFromCookie();
+        }
+
+        this.hasConfigured = function()
+        {
+            return null !== this.getCampaignFromConfig();
+        }
+
+        this.match = function(c1, c2)
+        {
+            var keys = getCampaignKeys();
+            for (var key in keys) {
+                if (!c1.hasOwnProperty(key)) {
+                    continue;
+                }
                 if (c1[key] !== c2[key]) {
                     return false;
                 }
@@ -727,74 +614,88 @@ var Sapience = (function() {
             return true;
         }
 
-        function campaignObjValid(obj)
+        function getCampaignKeys()
+        {
+            return Config.get('campaignKeys');
+        }
+
+        function campaignObjValid(c)
         {
             var requiredKeys = ['source', 'medium', 'name'];
-            for (var i in requiredKeys) {
+            var propFound = false;
+            for (var i = 0; i < requiredKeys.length; i++) {
                 var key = requiredKeys[i];
 
-                if (!Utils.isDefined(obj[key])) {
-                    return false;
+                if (!c.hasOwnProperty(key)) {
+                    continue;
                 }
+                propFound = true;
 
-                if (null === obj[key]) {
+                if (!c[key]) {
                     return false;
                 }
             }
-            return true;
+            return propFound;
         }
 
-        function cleanCampaign(obj)
+        function cleanCampaign(c)
         {
+            var keys = getCampaignKeys();
             var cleaned = {};
-            for (key in config.get('campaignKeys')) {
-                cleaned[key] = Utils.isDefined(obj[key]) ? obj[key] : null;
+            for (var key in keys) {
+                if (!c.hasOwnProperty(key)) {
+                    continue;
+                }
+                cleaned[key] = c[key] || null;
             }
             return cleaned;
         }
+    }
 
+    function CookieManager()
+    {
         /**
          *
          */
-        function setCookie(ctype, value)
+        this.set = function (ctype, value)
         {
-            var cookie = config.get('cookie');
+            var cookie = Config.get('cookie');
 
             if (false === Utils.isDefined(cookie[ctype])) {
-                Debugger.warn('Tracker()', 'Unable to set cookie. Cookie type "' + ctype + '" does not exist.');
+                Debugger.warn('CookieManager()', 'Unable to set cookie. Cookie type "' + ctype + '" does not exist.');
                 return;
             }
             var
                 name = cookie[ctype].key,
                 value = JSON.stringify(value),
                 seconds = cookie[ctype].expires * 60, // Config is in minutes, convert to seconds
-                domain = (config.get('useCookieDomain')) ? config.get('domainName') : null
+                domain = (Config.get('useCookieDomain')) ? Config.get('domainName') : null
             ;
             if (value) {
                 Utils.setCookie(name, value, domain, '/', seconds);
-                Debugger.info('Tracker()', 'Cookie "' + ctype + '" set with value ' + value);
+                Debugger.info('CookieManager()', 'Cookie "' + ctype + '" set with value ' + value);
             } else {
-                Debugger.warn('Tracker()', 'Unable to set cookie. The cookie value was empty.');
+                Debugger.warn('CookieManager()', 'Unable to set cookie. The cookie value was empty.');
             }
         }
 
         /**
          *
          */
-        function getCookie(ctype)
+        this.get = function (ctype)
         {
-            if (!Utils.isDefined(config.get('cookie')[ctype])) {
-                Debugger.info('Tracker()', 'Unable to retrieve cookie. Cookie "' + ctype + '" was not found.');
+            if (!Utils.isDefined(Config.get('cookie')[ctype])) {
+                Debugger.info('CookieManager()', 'Unable to retrieve cookie. Cookie "' + ctype + '" was not found.');
                 return null;
             }
-            var cookie = parseCookieValue(Utils.getCookie(config.get('cookie')[ctype].key));
+            var cookie = parseCookieValue(Utils.getCookie(Config.get('cookie')[ctype].key));
             if (null === cookie) {
-                Debugger.info('Tracker()', 'No value set for cookie type "' + ctype + '"');
+                Debugger.info('CookieManager()', 'No value set for cookie type "' + ctype + '"');
                 return cookie;
             }
 
             if (cookieRequiresId(ctype) && !Utils.isDefined(cookie.id)) {
-                Debugger.warn('Tracker()', 'The value for cookie type "' + ctype + '" requires an id but is missing. Ignoring cookie.');
+                Debugger.warn('CookieManager()', 'The value for cookie type "' + ctype + '" requires an id but is missing. Ignoring cookie.');
                 return null;
             }
             return cookie;
@@ -817,550 +718,10 @@ var Sapience = (function() {
             try {
                 return JSON.parse(value);
             } catch (e) {
-                Debugger.error('Tracker()', 'Failed to parse cookie JSON.');
+                Debugger.error('CookieManager()', 'Failed to parse cookie JSON.');
                 return null;
             }
         }
-
-        function Config()
-        {
-            var values = {
-                app: null,
-                baseEndpoint: '/events',
-                campaign: {
-                    source: null,
-                    medium: null,
-                    name: null,
-                    content: null,
-                    keyword: null,
-                },
-                campaignKeys: {
-                    source: 'utm_source',
-                    medium: 'utm_medium',
-                    name: 'utm_campaign',
-                    content: 'utm_content',
-                    keyword: 'utm_term'
-                },
-                cookie: {
-                    visitor: {
-                        key: '__sapience_v',
-                        expires: 1051200,
-                    },
-                    session: {
-                        key: '__sapience_s',
-                        expires: 30
-                    },
-                    identity: {
-                        key: '__sapience_i',
-                        expires: 1051200
-                    },
-                    campaign: {
-                        key: '__sapience_c',
-                        expires: 259200
-                    }
-                },
-                disabled: false,
-                domainName: document.domain,
-                endpoint: null,
-                page: {
-                    title: Utils.getPageTitle(),
-                    type: null,
-                    url: window.location.href,
-                },
-                referrer: Utils.getReferrer(),
-                referringIdentityKey: 'sapience_ri',
-                scrollSelector: window,
-                trackerDomain: 'http://olytics.cygnus.com',
-                useCookieDomain: false
-            };
-
-            function isValid()
-            {
-                return Utils.isString(values.endpoint) && Utils.isString(values.trackerDomain);
-            }
-
-            return {
-                setDisabled: function(bit) {
-                    if (!Utils.isDefined(bit)) {
-                        Debugger.warn('Config()', 'Unable to disable/enable the tracker.');
-                        return this;
-                    }
-                    bit = Boolean(bit);
-                    var status = (bit) ? 'disabled' : 'enabled';
-                    values.disabled = bit;
-                    Debugger.info('Config()', 'The tracker is now ' + status + '.');
-                },
-                setDomainName: function(domain) {
-                    if (!Utils.isString(domain)) {
-                        Debugger.warn('Config()', 'Unable to set the domain name.');
-                        return this;
-                    }
-
-                    values.domainName = domain;
-                    values.useCookieDomain = values.domainName !== document.domain;
-                    Debugger.info('Config()', 'Domain name "' + domain + '" set.');
-                    return this;
-                },
-                setEndpoint: function(endpoint) {
-                    if (!Utils.isString(endpoint)) {
-                        Debugger.warn('Config()', 'Unable to set the endpoint.');
-                        return this;
-                    }
-                    values.endpoint = endpoint;
-                    Debugger.info('Config()', 'Endpoint "' + endpoint + '" set.');
-                    return this;
-                },
-                setTrackerDomain: function(domain) {
-                    if (!Utils.isString(domain)) {
-                        Debugger.warn('Config()', 'Unable to set the tracker domain.');
-                        return this;
-                    }
-                    values.trackerDomain = domain;
-                    Debugger.info('Config()', 'Tracker domain "' + domain + '" set.');
-                    return this;
-                },
-                setPage: function (title, url) {
-                    if (Utils.isString(title)) {
-                        values.page.title(title);
-                        Debugger.info('Config()', 'Page title "' + title + '" set.');
-                    } else {
-                        Debugger.warn('Config()', 'Unable to set the page title.');
-                    }
-
-                    if (Utils.isString(url)) {
-                        values.page.url(url);
-                        Debugger.info('Config()', 'Page url "' + url + '" set.');
-                    } else {
-                        Debugger.warn('Config()', 'Unable to set the page url.');
-                    }
-                    return this;
-                },
-                setReferrer: function (url) {
-                    if (!Utils.isString(url)) {
-                        Debugger.warn('Config()', 'Unable to set the referrer.');
-                        return this;
-                    }
-                    values.referrer(url);
-                    Debugger.info('Config()', 'Referrer "' + url + '" set.');
-                    return this;
-                },
-                setPageType: function (type) {
-                    if (!Utils.isString(type)) {
-                        Debugger.warn('Config()', 'Unable to set the page type.');
-                        return this;
-                    }
-                    values.page.type = type;
-                    Debugger.info('Config()', 'Page type "' + type + '" set.');
-                    return this;
-                },
-                setApp: function (app) {
-                    if (!Utils.isString(app)) {
-                        Debugger.warn('Config()', 'Unable to set the app.');
-                        return this;
-                    }
-                    values.app = app;
-                    Debugger.info('Config()', 'App "' + app + '" set.');
-                    return this;
-                },
-                setCookieName: function(ctype, name) {
-                    if (!Utils.isString(ctype)) {
-                        Debugger.warn('Config()', 'Unable to modify cookie name. The cookie type is invalid.');
-                        return this;
-                    }
-                    if (!Utils.isString(name)) {
-                        Debugger.warn('Config()', 'Unable to modify cookie name. No cookie name was provided.');
-                        return this;
-                    }
-
-                    if (values.cookie.hasOwnProperty(ctype)) {
-                        values.cookie[ctype].key = name;
-                        Debugger.info('Config()', 'Cookie name "' + name + '" set for cookie type "' + ctype + '"');
-                    } else {
-                        Debugger.warn('Config()', 'Unable to modify cookie name. The cookie type "' + ctype + '" does not exist.');
-                    }
-                    return this;
-                },
-                setCookieExpires: function(ctype, minutes) {
-                    if (!Utils.isString(ctype)) {
-                        Debugger.warn('Config()', 'Unable to modify cookie expiration. The cookie type is invalid.');
-                        return this;
-                    }
-                    if (!Utils.isNumber(minutes) || minutes < 0) {
-                        Debugger.warn('Config()', 'Unable to modify cookie expiration. Cookie time must be set as non-negative minutes.');
-                        return this;
-                    }
-
-                    if (values.cookie.hasOwnProperty(ctype)) {
-                        values.cookie[ctype].expires = minutes;
-                        Debugger.info('Config()', 'Cookie expiration of ' + minutes + ' minutes for type "' + ctype + '" set.');
-                    } else {
-                        Debugger.warn('Config()', 'Unable to modify cookie expiration. The cookie type "' + ctype + '" does not exist.');
-                    }
-                    return this;
-                },
-                setReferringIdentityKey: function (key) {
-                    if (!Utils.isString(key)) {
-                        Debugger.warn('Config()', 'Unable to set the referring identity.');
-                        return this;
-                    }
-                    values.referringIdentityKey = key;
-                    Debugger.info('Config()', 'Referring identity key "' + key + '" set.');
-                    return this;
-                },
-                setCampaignKey: function (key, value) {
-                    if (!Utils.isDefined(values.campaignKeys[key])) {
-                        Debugger.warn('Config()', 'Unable to set the campaign key. The key "' + key + '" does not exist.');
-                        return this;
-                    }
-
-                    if (!Utils.isString(value)) {
-                        Debugger.warn('Config()', 'Unable to set the campaign key value');
-                        return this;
-                    }
-                    values.campaignKeys[key] = value;
-                    Debugger.info('Config()', 'Campaign key "' + key + '" now set to "' + value + '"');
-                    return this;
-                },
-                setCampaignValue: function (key, value) {
-                    if (!Utils.isDefined(values.campaign[key])) {
-                        Debugger.warn('Config()', 'Unable to set the campaign value. The key "' + key + '" does not exist.');
-                        return this;
-                    }
-                    if (!Utils.isString(value)) {
-                        Debugger.warn('Config()', 'Unable to set the campaign value.');
-                        return this;
-                    }
-                    values.campaign[key] = value;
-                    Debugger.info('Config()', 'Campaign value "' + value + '" now set to "' + key + '"');
-                    return this;
-                },
-                setScrollSelector: function (selector) {
-                    if (!Utils.isDefined(selector)) {
-                        Debugger.warn('Config()', 'Unable to set the scroll selector value.');
-                        return this;
-                    }
-                    values.scrollSelector = selector;
-                    Debugger.info('Config()', 'Scroll selector "' + selector + '" set.');
-                    return this;
-                },
-                get: function(key) {
-                    if (values.hasOwnProperty(key)) {
-                        return values[key];
-                    }
-                    return null;
-                },
-                isValid: function(key) {
-                    return isValid();
-                }
-            }
-        }
-
-        return {
-            _debug: function(bit) {
-                bit = Boolean(bit);
-                if (true === bit) { Debugger.enable() } else { Debugger.disable() };
-                return this;
-            },
-            _config: function() {
-                if (!Utils.isDefined(arguments[0])) {
-                    Debugger.warn('Unable to set config value(s). No config set method was defined.');
-                    return this;
-                }
-
-                var args = [];
-                for (var i = 0; i < arguments.length; i++)  {
-                    args[i] = arguments[i];
-                }
-
-                var method = args.shift();
-                if (!Utils.isFunction(config[method])) {
-                    Debugger.warn('Unable to set config value(s). The method "' + method + '" is not a valid configuration method');
-                    return this;
-                }
-                config[method].apply(config, args);
-                return this;
-            },
-            _trackEvent: function(action, entity, relatedTo, data) {
-                trackEvent(action, entity, relatedTo, data);
-                return this;
-            },
-            _trackAlso: function (actions, entity) {
-                trackAlso(actions, entity);
-                return this;
-            },
-            _trackPageview: function() {
-                trackPageview();
-                return this;
-            },
-            _trackScroll: function (entity) {
-                trackScroll(entity);
-                return this;
-            },
-            _trackFocus: function (entity) {
-                trackFocus(entity);
-                return this;
-            },
-            _trackUnload: function (entity) {
-                trackUnload(entity);
-                return this;
-            },
-            _resendLastEvent: function(action) {
-                resendLastEvent(action);
-                return this;
-            },
-            config: config
-        }
-    }
-
-    /**
-     *
-     */
-    function Utils()
-    {
-        var
-            urlEncode = window.encodeURIComponent,
-            urlDecode = window.decodeURIComponent
-        ;
-
-        /**
-         *
-         */
-        function Url(url)
-        {
-            this.value = url;
-            this.element = document.createElement('a');
-            this.element.href = url;
-
-            this.getPath = function()
-            {
-                return this.element.pathname;
-            }
-
-            this.getHost = function()
-            {
-                return this.element.hostname;
-            }
-
-            this.getScheme = function()
-            {
-                var e = new RegExp('^([a-z]+):'),
-                matches = e.exec(this.value);
-                return matches ? matches[1] : null;
-            }
-
-            this.getQuery = function()
-            {
-                return this.element.search;
-            }
-
-            this.getQueryParam = function (key)
-            {
-                var
-                    regex = new RegExp(key +'=([^&]+)'),
-                    qs = this.getQuery()
-                ;
-                if (!qs) {
-                    return null;
-                }
-
-                var results = qs.match(regex);
-                return results ? urlDecode(results[1]) : null;
-            }
-        }
-
-        return {
-            isObject: function(property) {
-                return typeof property === 'object';
-            },
-
-            isArray: function(obj) {
-                return Object.prototype.toString.call(obj) === '[object Array]';
-            },
-
-            isFunction: function(property) {
-                return typeof property === 'function';
-            },
-
-            isNumber: function(property) {
-                return typeof property === 'number';
-            },
-
-            isDefined: function(property) {
-                return typeof property !== 'undefined';
-            },
-
-            isString: function(property) {
-                return typeof property === 'string' || property instanceof String;
-            },
-            rand: function() {
-                return Math.floor(Math.random() * 9999999999) + ""
-            },
-            url: function(url) {
-                return new Url(url);
-            },
-            getCookie: function(name) {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = cookies[i].trim().split('=');
-                    if (cookie[0] == name) {
-                        return cookie[1];
-                    }
-                }
-                return null;
-            },
-            setCookie: function(name, value, domain, path, seconds) {
-                var d = new Date();
-                d.setTime(d.getTime() + (seconds * 1000)); // Milliseconds
-
-                var
-                    expires = (seconds > 0) ? '; expires=' + d.toGMTString() : '',
-                    domain = (domain) ? '; domain=' + domain : '',
-                    path = '; path=' + path
-                ;
-
-                if (value) {
-                    document.cookie = urlEncode(name) + '=' + urlEncode(value) + expires + domain + path;
-                }
-            },
-            getReferrer: function() {
-                var referrer = null;
-                try {
-                    referrer = window.top.document.referrer;
-                } catch (e) {
-                    if (window.parent) {
-                        try {
-                            referrer = window.parent.document.referrer;
-                        } catch (e2) {
-                            referrer = null;
-                        }
-                    }
-                }
-                if (referrer === null) {
-                    referrer = document.referrer;
-                }
-                if (referrer === '') {
-                    return null;
-                }
-                return referrer;
-            },
-            getPageTitle: function() {
-                var elements = document.getElementsByTagName('title');
-                if (elements && this.isDefined(elements[0])) {
-                    return urlDecode(elements[0].text);
-                }
-                return null;
-            },
-            getTimezone: function() {
-                var d = new Date();
-                return d.getTimezoneOffset();
-            },
-            getPixelRatio: function() {
-                return (new RegExp('Mac OS X.*Safari/')).test(navigator.userAgent) ? window.devicePixelRatio || 1 : 1;
-            },
-            getResolution: function() {
-                var pixelRatio = this.getPixelRatio();
-
-                return {
-                    width: screen.width * pixelRatio,
-                    height: screen.height * pixelRatio
-                };
-            },
-            getWindowSize: function() {
-                var pixelRatio = this.getPixelRatio();
-
-                var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) * pixelRatio;
-                var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * pixelRatio;
-
-                return {
-                    width: w,
-                    height: h
-                };
-            },
-            urlEncode: urlEncode,
-            urlDecode: urlDecode
-        };
-    }
-
-    /**
-     *
-     */
-    function Debugger()
-    {
-        init();
-
-        var enabled = false;
-
-        this.enable = function() {
-            enabled = true;
-            return this;
-        }
-
-        this.disable = function() {
-            enabled = false;
-            return this;
-        }
-
-        this.log = function() {
-            dispatch('log', arguments);
-            return this;
-        }
-
-        this.info = function() {
-            dispatch('info', arguments);
-            return this;
-        }
-
-        this.warn = function() {
-            dispatch('warn', arguments);
-            return this;
-        }
-
-        this.error = function() {
-            dispatch('error', arguments);
-            return this;
-        }
-
-        /**
-         *
-         */
-        function dispatch(method, arguments)
-        {
-            if (true === enabled) {
-                var args = ['SAPIENCE DEBUGGER:'];
-                for (var i = 0; i < arguments.length; i++)  {
-                    var n = i + 1;
-                    args[n] = arguments[i];
-                }
-                console[method].apply(console, args);
-            }
-        }
-
-        /**
-         *
-         */
-        function init()
-        {
-            if (typeof console === 'undefined') {
-                console = {};
-            }
-            var methods = ['log', 'info', 'warn', 'error'];
-            for (var key in methods) {
-                var method = methods[key];
-                if (typeof console[method] === 'undefined') {
-                    console[method] = function() {};
-                }
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    function Proxy()
-    {
-        return {
-            push: apply
-        };
     }
 
     function Request(requestObj, primaryUrl)
@@ -1422,7 +783,7 @@ var Sapience = (function() {
                     request.xdr('POST', primaryUrl, body);
                     break;
                 case 'jsonp':
-                    var encoded = encodeWrapper(Utils.Base64().encode(JSON.stringify(requestObj)));
+                    var encoded = Utils.urlEncode(Utils.Base64().encode(JSON.stringify(requestObj)));
                     var url = primaryUrl + '?enc=' + encoded;
                     Debugger.info('Request()', 'Sending the request object via JSONP.');
                     request.jsonp(url);
@@ -1649,191 +1010,504 @@ var Sapience = (function() {
         this.init();
     }
 
-    /**
-     *
-     */
-    function Base64()
+    function Config()
     {
+        var values = {
+            app: null,
+            baseEndpoint: '/events',
+            campaign: {
+                source: null,
+                medium: null,
+                name: null,
+                content: null,
+                keyword: null,
+            },
+            campaignKeys: {
+                source: 'utm_source',
+                medium: 'utm_medium',
+                name: 'utm_campaign',
+                content: 'utm_content',
+                keyword: 'utm_term'
+            },
+            cookie: {
+                visitor: {
+                    key: '__sapience_v',
+                    expires: 1051200,
+                },
+                session: {
+                    key: '__sapience_s',
+                    expires: 30
+                },
+                identity: {
+                    key: '__sapience_i',
+                    expires: 1051200
+                },
+                campaign: {
+                    key: '__sapience_c',
+                    expires: 259200
+                }
+            },
+            disabled: false,
+            domainName: document.domain,
+            endpoint: null,
+            page: {
+                title: Utils.getPageTitle(),
+                type: null,
+                url: window.location.href,
+            },
+            referrer: Utils.getReferrer(),
+            referringIdentityKey: 'sapience_ri',
+            scrollSelector: window,
+            trackerDomain: 'http://olytics.cygnus.com',
+            useCookieDomain: false
+        };
+
+        function isValid()
+        {
+            return Utils.isString(values.endpoint) && Utils.isString(values.trackerDomain);
+        }
+
         return {
-
-            _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-
-            encode : function (input) {
-                var output = "";
-                var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-                var i = 0;
-
-                input = this._utf8_encode(input);
-
-                while (i < input.length) {
-
-                    chr1 = input.charCodeAt(i++);
-                    chr2 = input.charCodeAt(i++);
-                    chr3 = input.charCodeAt(i++);
-
-                    enc1 = chr1 >> 2;
-                    enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-                    enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-                    enc4 = chr3 & 63;
-
-                    if (isNaN(chr2)) {
-                        enc3 = enc4 = 64;
-                    } else if (isNaN(chr3)) {
-                        enc4 = 64;
-                    }
-
-                    output = output +
-                    this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) +
-                    this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
+            setDisabled: function(bit) {
+                if (!Utils.isDefined(bit)) {
+                    Debugger.warn('Config()', 'Unable to disable/enable the tracker.');
+                    return this;
                 }
-                return output;
+                bit = Boolean(bit);
+                var status = (bit) ? 'disabled' : 'enabled';
+                values.disabled = bit;
+                Debugger.info('Config()', 'The tracker is now ' + status + '.');
+                return this;
             },
-
-            decode : function (input) {
-                var output = "";
-                var chr1, chr2, chr3;
-                var enc1, enc2, enc3, enc4;
-                var i = 0;
-
-                input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-
-                while (i < input.length) {
-
-                    enc1 = this._keyStr.indexOf(input.charAt(i++));
-                    enc2 = this._keyStr.indexOf(input.charAt(i++));
-                    enc3 = this._keyStr.indexOf(input.charAt(i++));
-                    enc4 = this._keyStr.indexOf(input.charAt(i++));
-
-                    chr1 = (enc1 << 2) | (enc2 >> 4);
-                    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-                    chr3 = ((enc3 & 3) << 6) | enc4;
-
-                    output = output + String.fromCharCode(chr1);
-
-                    if (enc3 != 64) {
-                        output = output + String.fromCharCode(chr2);
-                    }
-                    if (enc4 != 64) {
-                        output = output + String.fromCharCode(chr3);
-                    }
+            setDomainName: function(domain) {
+                if (!Utils.isString(domain)) {
+                    Debugger.warn('Config()', 'Unable to set the domain name.');
+                    return this;
                 }
-                output = this._utf8_decode(output);
-                return output;
+
+                values.domainName = domain;
+                values.useCookieDomain = values.domainName !== document.domain;
+                Debugger.info('Config()', 'Domain name "' + domain + '" set.');
+                return this;
             },
-
-            _utf8_encode : function (string) {
-                string = string.replace(/\r\n/g,"\n");
-                var utftext = "";
-
-                for (var n = 0; n < string.length; n++) {
-
-                    var c = string.charCodeAt(n);
-
-                    if (c < 128) {
-                        utftext += String.fromCharCode(c);
-                    } else if((c > 127) && (c < 2048)) {
-                        utftext += String.fromCharCode((c >> 6) | 192);
-                        utftext += String.fromCharCode((c & 63) | 128);
-                    } else {
-                        utftext += String.fromCharCode((c >> 12) | 224);
-                        utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-                        utftext += String.fromCharCode((c & 63) | 128);
-                    }
-
+            setEndpoint: function(endpoint) {
+                if (!Utils.isString(endpoint)) {
+                    Debugger.warn('Config()', 'Unable to set the endpoint.');
+                    return this;
                 }
-                return utftext;
+                values.endpoint = endpoint;
+                Debugger.info('Config()', 'Endpoint "' + endpoint + '" set.');
+                return this;
             },
-
-            _utf8_decode : function (utftext) {
-                var string = "";
-                var i = 0;
-                var c = c1 = c2 = 0;
-
-                while ( i < utftext.length ) {
-
-                    c = utftext.charCodeAt(i);
-
-                    if (c < 128) {
-                        string += String.fromCharCode(c);
-                        i++;
-                    } else if((c > 191) && (c < 224)) {
-                        c2 = utftext.charCodeAt(i+1);
-                        string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-                        i += 2;
-                    } else {
-                        c2 = utftext.charCodeAt(i+1);
-                        c3 = utftext.charCodeAt(i+2);
-                        string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-                        i += 3;
-                    }
+            setTrackerDomain: function(domain) {
+                if (!Utils.isString(domain)) {
+                    Debugger.warn('Config()', 'Unable to set the tracker domain.');
+                    return this;
                 }
-                return string;
+                values.trackerDomain = domain;
+                Debugger.info('Config()', 'Tracker domain "' + domain + '" set.');
+                return this;
+            },
+            setPage: function (title, url) {
+                if (Utils.isString(title)) {
+                    values.page.title(title);
+                    Debugger.info('Config()', 'Page title "' + title + '" set.');
+                } else {
+                    Debugger.warn('Config()', 'Unable to set the page title.');
+                }
+
+                if (Utils.isString(url)) {
+                    values.page.url(url);
+                    Debugger.info('Config()', 'Page url "' + url + '" set.');
+                } else {
+                    Debugger.warn('Config()', 'Unable to set the page url.');
+                }
+                return this;
+            },
+            setReferrer: function (url) {
+                if (!Utils.isString(url)) {
+                    Debugger.warn('Config()', 'Unable to set the referrer.');
+                    return this;
+                }
+                values.referrer(url);
+                Debugger.info('Config()', 'Referrer "' + url + '" set.');
+                return this;
+            },
+            setPageType: function (type) {
+                if (!Utils.isString(type)) {
+                    Debugger.warn('Config()', 'Unable to set the page type.');
+                    return this;
+                }
+                values.page.type = type;
+                Debugger.info('Config()', 'Page type "' + type + '" set.');
+                return this;
+            },
+            setApp: function (app) {
+                if (!Utils.isString(app)) {
+                    Debugger.warn('Config()', 'Unable to set the app.');
+                    return this;
+                }
+                values.app = app;
+                Debugger.info('Config()', 'App "' + app + '" set.');
+                return this;
+            },
+            setCookieName: function(ctype, name) {
+                if (!Utils.isString(ctype)) {
+                    Debugger.warn('Config()', 'Unable to modify cookie name. The cookie type is invalid.');
+                    return this;
+                }
+                if (!Utils.isString(name)) {
+                    Debugger.warn('Config()', 'Unable to modify cookie name. No cookie name was provided.');
+                    return this;
+                }
+
+                if (values.cookie.hasOwnProperty(ctype)) {
+                    values.cookie[ctype].key = name;
+                    Debugger.info('Config()', 'Cookie name "' + name + '" set for cookie type "' + ctype + '"');
+                } else {
+                    Debugger.warn('Config()', 'Unable to modify cookie name. The cookie type "' + ctype + '" does not exist.');
+                }
+                return this;
+            },
+            setCookieExpires: function(ctype, minutes) {
+                if (!Utils.isString(ctype)) {
+                    Debugger.warn('Config()', 'Unable to modify cookie expiration. The cookie type is invalid.');
+                    return this;
+                }
+                if (!Utils.isNumber(minutes) || minutes < 0) {
+                    Debugger.warn('Config()', 'Unable to modify cookie expiration. Cookie time must be set as non-negative minutes.');
+                    return this;
+                }
+
+                if (values.cookie.hasOwnProperty(ctype)) {
+                    values.cookie[ctype].expires = minutes;
+                    Debugger.info('Config()', 'Cookie expiration of ' + minutes + ' minutes for type "' + ctype + '" set.');
+                } else {
+                    Debugger.warn('Config()', 'Unable to modify cookie expiration. The cookie type "' + ctype + '" does not exist.');
+                }
+                return this;
+            },
+            setReferringIdentityKey: function (key) {
+                if (!Utils.isString(key)) {
+                    Debugger.warn('Config()', 'Unable to set the referring identity.');
+                    return this;
+                }
+                values.referringIdentityKey = key;
+                Debugger.info('Config()', 'Referring identity key "' + key + '" set.');
+                return this;
+            },
+            setCampaignKey: function (key, value) {
+                if (!Utils.isDefined(values.campaignKeys[key])) {
+                    Debugger.warn('Config()', 'Unable to set the campaign key. The key "' + key + '" does not exist.');
+                    return this;
+                }
+
+                if (!Utils.isString(value)) {
+                    Debugger.warn('Config()', 'Unable to set the campaign key value');
+                    return this;
+                }
+                values.campaignKeys[key] = value;
+                Debugger.info('Config()', 'Campaign key "' + key + '" now set to "' + value + '"');
+                return this;
+            },
+            setCampaignValue: function (key, value) {
+                if (!Utils.isDefined(values.campaign[key])) {
+                    Debugger.warn('Config()', 'Unable to set the campaign value. The key "' + key + '" does not exist.');
+                    return this;
+                }
+                if (!Utils.isString(value)) {
+                    Debugger.warn('Config()', 'Unable to set the campaign value.');
+                    return this;
+                }
+                values.campaign[key] = value;
+                Debugger.info('Config()', 'Campaign value "' + value + '" now set to "' + key + '"');
+                return this;
+            },
+            setScrollSelector: function (selector) {
+                if (!Utils.isDefined(selector)) {
+                    Debugger.warn('Config()', 'Unable to set the scroll selector value.');
+                    return this;
+                }
+                values.scrollSelector = selector;
+                Debugger.info('Config()', 'Scroll selector "' + selector + '" set.');
+                return this;
+            },
+            get: function(key) {
+                if (values.hasOwnProperty(key)) {
+                    return values[key];
+                }
+                return null;
+            },
+            isValid: function(key) {
+                return isValid();
             }
+        }
+    }
+
+    function Utils()
+    {
+        var
+            urlEncode = window.encodeURIComponent,
+            urlDecode = window.decodeURIComponent
+        ;
+
+        /**
+         *
+         */
+        function Url(url)
+        {
+            this.value = url;
+            this.element = document.createElement('a');
+            this.element.href = url;
+
+            this.getPath = function()
+            {
+                return this.element.pathname;
+            }
+
+            this.getHost = function()
+            {
+                return this.element.hostname;
+            }
+
+            this.getScheme = function()
+            {
+                var e = new RegExp('^([a-z]+):'),
+                matches = e.exec(this.value);
+                return matches ? matches[1] : null;
+            }
+
+            this.getQuery = function()
+            {
+                return this.element.search;
+            }
+
+            this.getQueryParam = function (key)
+            {
+                var
+                    regex = new RegExp(key +'=([^&]+)'),
+                    qs = this.getQuery()
+                ;
+                if (!qs) {
+                    return null;
+                }
+
+                var results = qs.match(regex);
+                return results ? urlDecode(results[1]) : null;
+            }
+        }
+
+        return {
+            isObject: function(property) {
+                return typeof property === 'object';
+            },
+
+            isArray: function(obj) {
+                return Object.prototype.toString.call(obj) === '[object Array]';
+            },
+
+            isFunction: function(property) {
+                return typeof property === 'function';
+            },
+
+            isNumber: function(property) {
+                return typeof property === 'number';
+            },
+
+            isDefined: function(property) {
+                return typeof property !== 'undefined';
+            },
+
+            isString: function(property) {
+                return typeof property === 'string' || property instanceof String;
+            },
+            rand: function() {
+                return Math.floor(Math.random() * 9999999999) + ""
+            },
+            url: function(url) {
+                return new Url(url);
+            },
+            getCookie: function(name) {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim().split('=');
+                    if (cookie[0] == name) {
+                        return cookie[1];
+                    }
+                }
+                return null;
+            },
+            setCookie: function(name, value, domain, path, seconds) {
+                var d = new Date();
+                d.setTime(d.getTime() + (seconds * 1000)); // Milliseconds
+
+                var
+                    expires = (seconds > 0) ? '; expires=' + d.toGMTString() : '',
+                    domain = (domain) ? '; domain=' + domain : '',
+                    path = '; path=' + path
+                ;
+
+                if (value) {
+                    document.cookie = urlEncode(name) + '=' + urlEncode(value) + expires + domain + path;
+                }
+            },
+            getReferrer: function() {
+                var referrer = null;
+                try {
+                    referrer = window.top.document.referrer;
+                } catch (e) {
+                    if (window.parent) {
+                        try {
+                            referrer = window.parent.document.referrer;
+                        } catch (e2) {
+                            referrer = null;
+                        }
+                    }
+                }
+                if (referrer === null) {
+                    referrer = document.referrer;
+                }
+                if (referrer === '') {
+                    return null;
+                }
+                return referrer;
+            },
+            getPageTitle: function() {
+                var elements = document.getElementsByTagName('title');
+                if (elements && this.isDefined(elements[0])) {
+                    return urlDecode(elements[0].text);
+                }
+                return null;
+            },
+            getTimezone: function() {
+                var d = new Date();
+                return d.getTimezoneOffset();
+            },
+            getPixelRatio: function() {
+                return (new RegExp('Mac OS X.*Safari/')).test(navigator.userAgent) ? window.devicePixelRatio || 1 : 1;
+            },
+            getResolution: function() {
+                var pixelRatio = this.getPixelRatio();
+
+                return {
+                    width: screen.width * pixelRatio,
+                    height: screen.height * pixelRatio
+                };
+            },
+            getWindowSize: function() {
+                var pixelRatio = this.getPixelRatio();
+
+                var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) * pixelRatio;
+                var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * pixelRatio;
+
+                return {
+                    width: w,
+                    height: h
+                };
+            },
+            getViewPort: function() {
+                var dim = {
+                    width: 0,
+                    height: 0
+                };
+                if (this.isDefined(window.innerHeight)) {
+                    dim.width = window.innerWidth;
+                    dim.height = window.innerHeight;
+                }
+                return dim;
+            },
+            urlEncode: urlEncode,
+            urlDecode: urlDecode
         };
     }
 
-    /**
-     *
-     */
-    function init()
+    function Debugger()
     {
-        // Fire debug enable/disable first
-        for (var i = 0; i < _sapient.length; i++) {
-            if (_sapient[i][0] === '_debug') {
-                apply(_sapient[i]);
-                _sapient.splice(i, 1);
-            }
+        init();
+
+        var enabled = false;
+
+        this.enable = function() {
+            enabled = true;
+            return this;
         }
 
-        // Fire all config options next
-        for (var i = 0; i < _sapient.length; i++) {
-            if (_sapient[i][0] === '_config') {
-                apply(_sapient[i]);
-                _sapient.splice(i, 1);
-            }
+        this.disable = function() {
+            enabled = false;
+            return this;
         }
 
-        // Fire remaining actions
-        for (var i = 0; i < _sapient.length; i++) {
-            if (_sapient[i]) {
-                apply(_sapient[i]);
-            }
+        this.log = function() {
+            dispatch('log', arguments);
+            return this;
         }
-    }
 
-    /**
-     *
-     */
-    function apply()
-    {
-        var i, f, parameterArray;
+        this.info = function() {
+            dispatch('info', arguments);
+            return this;
+        }
 
-        for (var i = 0; i < arguments.length; i++)  {
-            parameterArray = arguments[i];
-            f = parameterArray.shift();
+        this.warn = function() {
+            dispatch('warn', arguments);
+            return this;
+        }
 
-            if (Utils.isString(f)) {
-                if (Utils.isDefined(Tracker[f])) {
-                    Tracker[f].apply(Tracker, parameterArray);
-                } else {
-                    Debugger.error('Sapience()', 'Unable to apply method "' + f + '" to Tracker object. The function does not exist.');
+        this.error = function() {
+            dispatch('error', arguments);
+            return this;
+        }
+
+        /**
+         *
+         */
+        function dispatch(method, passed)
+        {
+            if (true === enabled) {
+                var args = ['SAPIENCE DEBUGGER:'];
+                for (var i = 0; i < passed.length; i++)  {
+                    var n = i + 1;
+                    args[n] = passed[i];
                 }
-            } else {
-                f.apply(Tracker, parameterArray);
+                console[method].apply(console, args);
+            }
+        }
+
+        /**
+         *
+         */
+        function init()
+        {
+            if (typeof console === 'undefined') {
+                console = {};
+            }
+            var methods = ['log', 'info', 'warn', 'error'];
+            for (var i = 0; i < methods.length; i++) {
+                var method = methods[i];
+                if (typeof console[method] === 'undefined') {
+                    console[method] = function() {};
+                }
             }
         }
     }
 
-    return {
-        getTracker: function() {
-            return Tracker;
-        },
-        getDebugger: function() {
-            return Debugger;
-        },
-        getUtils: function() {
-            return Utils;
+    /**
+     * Sets forward compatibility for browsers that lack support of 'built-in' functions.
+     *
+     */
+    function setCompatibility()
+    {
+        if (typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^\s+|\s+$/g, '');
+            }
         }
-    };
 
-}());
+        if (typeof document.hasFocus !== 'function') {
+            // Opera lacks hasFocus support. Simply default to true.
+            document.hasFocus = function() {
+                return true;
+            }
+        }
+    }
+
+})(window.Sapience = window.Sapience || {});//, jQuery);

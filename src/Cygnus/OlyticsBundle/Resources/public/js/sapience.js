@@ -42,6 +42,11 @@
             visitor, session, identity, campaign
         ;
 
+        this.setIdentity = function (id) {
+            setIdentity({id: id});
+            return this;
+        }
+
         this.send = function(action, entity, relatedTo, data)
         {
             if (Config.get('disabled')) {

@@ -15,7 +15,7 @@ class EventController extends Controller
     {
         // This is legacy handling until the websites are switched
         // REMOVE once complete
-        if ($account != 'test' && $account != 'scomm')) {
+        if ($account != 'test' && $account != 'scomm') {
             $accounts = ['acbm', 'cygnus'];
             if (!in_array($account, $accounts)) {
                 // Account is a legacy Vertical key

@@ -20,7 +20,7 @@ snc_redis:
 
 cygnus_olytics:
     connection:
-        server: mongodb://devdb01.cygnuspub.com:27017
+        server: mongodb://devmongo.cygnus.com:27017
         options: {}
     host: dev.olytics.cygnus.com
 

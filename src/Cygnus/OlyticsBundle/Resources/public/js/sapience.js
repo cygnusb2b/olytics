@@ -16,6 +16,7 @@
     Sapience.Config             = Config;
     Sapience.CampaignManager    = CampaignManager;
     Sapience.Tracker            = Tracker;
+    Sapience.CookieManager      = CookieManager;
 
     // Public Functions
     Sapience.setDebug = function(bit) {

@@ -10,6 +10,9 @@ parameters:
     cygnus_olytics.aggregation.openx.class: Cygnus\OlyticsBundle\Aggregation\OpenXImpressionAggregation
     cygnus_olytics.aggregation.openx.user.class: Cygnus\OlyticsBundle\Aggregation\OpenXUserAggregation
     cygnus_olytics.aggregation.archive.content.class: Cygnus\OlyticsBundle\Aggregation\ContentArchiveAggregation
+    cygnus_olytics.aggregation.brevity.acquisition.class: Cygnus\OlyticsBundle\Aggregation\Brevity\AcquisitionAggregation
+    cygnus_olytics.aggregation.brevity.share.class: Cygnus\OlyticsBundle\Aggregation\Brevity\ShareAggregation
+    cygnus_olytics.aggregation.brevity.session.class: Cygnus\OlyticsBundle\Aggregation\Brevity\SessionAggregation
     cygnus_olytics.event_hook_manager.class: Cygnus\OlyticsBundle\EventHook\Manager
     cygnus_olytics.event_hook.mongo_user_id.class: Cygnus\OlyticsBundle\EventHook\MongoUserIdHook
 
@@ -52,6 +55,24 @@ services:
     cygnus_olytics.aggregation.abstract:
         abstract: true
         arguments: [ @cygnus_olytics.index_manager, @doctrine_mongodb.odm.olytics_connection ]
+
+    cygnus_olytics.aggregation.brevity.acquisition:
+        parent: cygnus_olytics.aggregation.abstract
+        class: %cygnus_olytics.aggregation.brevity.acquisition.class%
+        tags:
+            - { name: cygnus_olytics.aggregation }
+
+    cygnus_olytics.aggregation.brevity.share:
+        parent: cygnus_olytics.aggregation.abstract
+        class: %cygnus_olytics.aggregation.brevity.share.class%
+        tags:
+            - { name: cygnus_olytics.aggregation }
+
+    cygnus_olytics.aggregation.brevity.session:
+        parent: cygnus_olytics.aggregation.abstract
+        class: %cygnus_olytics.aggregation.brevity.session.class%
+        tags:
+            - { name: cygnus_olytics.aggregation }
 
     cygnus_olytics.aggregation.openx:
         parent: cygnus_olytics.aggregation.abstract

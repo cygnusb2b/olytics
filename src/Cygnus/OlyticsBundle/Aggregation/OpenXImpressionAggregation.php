@@ -29,7 +29,7 @@ class OpenXImpressionAggregation extends AbstractAggregation
      * @param  string                                           $groupKey
      * @return self
      */
-    protected function doExecute(EventInterface $event, $accountKey, $groupKey)
+    protected function doExecute(EventInterface $event, $accountKey, $groupKey, $appKey)
     {
         $dbName = 'openx_feed';
         $collName = sprintf('%s_%s', $accountKey, $groupKey);
@@ -263,7 +263,7 @@ class OpenXImpressionAggregation extends AbstractAggregation
      * @param  string                                           $groupKey
      * @return bool
      */
-    public function supports(EventInterface $event, $accountKey, $groupKey)
+    public function supports(EventInterface $event, $accountKey, $groupKey, $appKey)
     {
         if (!$this->isEnabled($accountKey, $groupKey)) {
             return false;

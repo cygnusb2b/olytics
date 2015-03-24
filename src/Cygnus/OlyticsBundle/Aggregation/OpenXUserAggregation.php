@@ -28,7 +28,7 @@ class OpenXUserAggregation extends AbstractAggregation
      * @param  string                                           $groupKey
      * @return self
      */
-    protected function doExecute(EventInterface $event, $accountKey, $groupKey)
+    protected function doExecute(EventInterface $event, $accountKey, $groupKey, $appKey)
     {
         // Define the db and collection name where this aggregation should be stored
         $dbName = 'openx_user_feed';
@@ -83,7 +83,7 @@ class OpenXUserAggregation extends AbstractAggregation
      * @param  string                                           $groupKey
      * @return bool
      */
-    public function supports(EventInterface $event, $accountKey, $groupKey)
+    public function supports(EventInterface $event, $accountKey, $groupKey, $appKey)
     {
         if (!$this->isEnabled($accountKey, $groupKey)) {
             // Aggregation is disabled for account or group

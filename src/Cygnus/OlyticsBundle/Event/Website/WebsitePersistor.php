@@ -121,7 +121,7 @@ class WebsitePersistor extends Persistor
             ->execute()
         ;
         // Execute aggregations
-        $this->getAggregationManager()->executeAll($event, $this->account, $this->product);
+        $this->getAggregationManager()->executeAll($event, $this->account, $this->product, $this->app);
     }
 
     /**

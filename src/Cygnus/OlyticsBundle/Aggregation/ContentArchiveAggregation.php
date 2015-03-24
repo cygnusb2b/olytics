@@ -46,7 +46,7 @@ class ContentArchiveAggregation extends AbstractAggregation
      * @param  string                                           $groupKey
      * @return self
      */
-    protected function doExecute(EventInterface $event, $accountKey, $groupKey)
+    protected function doExecute(EventInterface $event, $accountKey, $groupKey, $appKey)
     {
         $this
             ->handleSessionArchive($event, $accountKey, $groupKey)
@@ -295,7 +295,7 @@ class ContentArchiveAggregation extends AbstractAggregation
      * @param  string                                           $groupKey
      * @return bool
      */
-    public function supports(EventInterface $event, $accountKey, $groupKey)
+    public function supports(EventInterface $event, $accountKey, $groupKey, $appKey)
     {
         if (!$this->isEnabled($accountKey, $groupKey)) {
             return false;

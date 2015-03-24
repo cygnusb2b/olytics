@@ -61,12 +61,12 @@ abstract class AbstractAggregation implements AggregationInterface
      * @param  string                                           $groupKey
      * @return self
      */
-    public function execute(EventInterface $event, $accountKey, $groupKey)
+    public function execute(EventInterface $event, $accountKey, $groupKey, $appKey)
     {
-        if (!$this->supports($event, $accountKey, $groupKey)) {
+        if (!$this->supports($event, $accountKey, $groupKey, $appKey)) {
             return $this;
         }
-        return $this->doExecute($event, $accountKey, $groupKey);
+        return $this->doExecute($event, $accountKey, $groupKey, $appKey);
     }
 
     /**
@@ -78,7 +78,7 @@ abstract class AbstractAggregation implements AggregationInterface
      * @param  string                                           $groupKey
      * @return self
      */
-    abstract protected function doExecute(EventInterface $event, $accountKey, $groupKey);
+    abstract protected function doExecute(EventInterface $event, $accountKey, $groupKey, $appKey);
     /**
      * Determines if this aggregation supports the provided event, account, and group
      *
@@ -88,7 +88,7 @@ abstract class AbstractAggregation implements AggregationInterface
      * @param  string                                           $groupKey
      * @return bool
      */
-    abstract public function supports(EventInterface $event, $accountKey, $groupKey);
+    abstract public function supports(EventInterface $event, $accountKey, $groupKey, $appKey);
 
     /**
      * Gets the index manager

@@ -115,47 +115,6 @@ class SessionAggregation extends AbstractAggregation
             ->getQuery()
             ->execute();
         ;
-
-
-        var_dump($result);
-        die();
-
-
-
-        // var_dump(json_encode($upsertObj));
-        // die();
-
-
-
-        $builder = $this->createQueryBuilder($dbName, $collName)
-            ->findAndUpdate()
-            ->upsert(true)
-            ->returnNew(true)
-            ->setNewObj($upsertObj)
-        ;
-
-
-
-        $result = $builder->getQuery()->execute();
-
-        var_dump($result);
-        die();
-
-
-
-        $upsertObj = $this->createUpsertObject($event);
-
-        $builder = $this->createQueryBuilder($dbName, $collName)
-            ->update()
-            ->upsert(true)
-            ->setNewObj($upsertObj)
-        ;
-
-        foreach (['issueId', 'customerId', 'provider', 'entity'] as $field) {
-            $builder->field($field)->equals($upsertObj['$setOnInsert'][$field]);
-        }
-
-        $builder->getQuery()->execute();
         return $this;
     }
 

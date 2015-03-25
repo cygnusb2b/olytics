@@ -41,12 +41,13 @@ class Manager
      * @param  Cygnus\OlyticsBundle\Model\Event\EventInterface  $event
      * @param  string                                           $accountKey
      * @param  string                                           $groupKey
+     * @param  string                                           $appKey
      * @return self
      */
-    public function executeAll(EventInterface $event, $accountKey, $groupKey)
+    public function executeAll(EventInterface $event, $accountKey, $groupKey, $appKey)
     {
         foreach ($this->getAggregations() as $aggregation) {
-            $aggregation->execute($event, $accountKey, $groupKey);
+            $aggregation->execute($event, $accountKey, $groupKey, $appKey);
         }
         return $this;
     }

@@ -21,7 +21,7 @@ interface AggregationInterface
      * @param  string                                           $groupKey
      * @return self
      */
-    public function execute(EventInterface $event, $accountKey, $groupKey);
+    public function execute(EventInterface $event, $accountKey, $groupKey, $appKey);
 
     /**
      * Determines if this aggregation supports the provided event, account, and group
@@ -31,5 +31,5 @@ interface AggregationInterface
      * @param  string                                           $groupKey
      * @return bool
      */
-    public function supports(EventInterface $event, $accountKey, $groupKey);
+    public function supports(EventInterface $event, $accountKey, $groupKey, $appKey);
 }

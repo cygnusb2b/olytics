@@ -148,9 +148,6 @@
                 } else if (sessionEndOfDay(session)) {
                     Debugger.info('Tracker()', 'Session end of day reached. Expire and create new.');
                     s = createNewSession();
-                } else if (sessionUpdateReferringIdentity(session)) {
-                    Debugger.info('Tracker()', 'A new referring identity was detected. Create new session.');
-                    s = createNewSession();
                 } else {
                     s = session;
                 }
@@ -191,8 +188,7 @@
 
             var session = {
                 id: uuid.v4(),
-                createdAt: d.toGMTString(),
-                rcid: getReferringIdentityId()
+                createdAt: d.toGMTString()
             }
             Debugger.info('Tracker()', 'Created a new session with id ' + session.id);
             return session;
@@ -242,16 +238,6 @@
             return Utils.isDefined(campaign) && null !== campaign;
         }
 
-        function hasReferringIdentityId()
-        {
-            return null !== getReferringIdentityId();
-        }
-
-        function getReferringIdentityId()
-        {
-            return Utils.url(window.location.href).getQueryParam(Config.get('referringIdentityKey'));
-        }
-
         function visitorHasIdentityId()
         {
             return null !== getVisitorIdentityId();
@@ -277,22 +263,6 @@
                 Debugger.warn('Tracker()', 'Unable to determine session end of day.');
                 return true;
             }
-        }
-
-        function sessionUpdateReferringIdentity(session)
-        {
-            if (!hasReferringIdentityId()) {
-                return false;
-            }
-            if (!sessionHasReferringIdentity(session)) {
-                return true;
-            }
-            return getReferringIdentityId() !== session.rcid;
-        }
-
-        function sessionHasReferringIdentity(session)
-        {
-            return Utils.isDefined(session.rcid) && null !== session.rcid;
         }
 
         function Unload()
@@ -1027,13 +997,15 @@
                 name: null,
                 content: null,
                 keyword: null,
+                influencer: null,
             },
             campaignKeys: {
                 source: 'utm_source',
                 medium: 'utm_medium',
                 name: 'utm_campaign',
                 content: 'utm_content',
-                keyword: 'utm_term'
+                keyword: 'utm_term',
+                influencer: 'utm_influencer'
             },
             cookie: {
                 visitor: {
@@ -1062,7 +1034,6 @@
                 url: window.location.href,
             },
             referrer: Utils.getReferrer(),
-            referringIdentityKey: 'sapience_ri',
             scrollSelector: window,
             trackerDomain: 'http://olytics.cygnus.com',
             useCookieDomain: false
@@ -1191,15 +1162,6 @@
                 } else {
                     Debugger.warn('Config()', 'Unable to modify cookie expiration. The cookie type "' + ctype + '" does not exist.');
                 }
-                return this;
-            },
-            setReferringIdentityKey: function (key) {
-                if (!Utils.isString(key)) {
-                    Debugger.warn('Config()', 'Unable to set the referring identity.');
-                    return this;
-                }
-                values.referringIdentityKey = key;
-                Debugger.info('Config()', 'Referring identity key "' + key + '" set.');
                 return this;
             },
             setCampaignKey: function (key, value) {

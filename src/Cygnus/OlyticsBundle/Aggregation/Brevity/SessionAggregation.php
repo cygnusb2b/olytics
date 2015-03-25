@@ -36,6 +36,7 @@ class SessionAggregation extends AbstractAggregation
         $this->createIndexes($dbName, $collName);
 
         $campaign = $event->getSession()->getCampaign();
+
         $entityType = $event->getEntity()->getType();
 
         if (!in_array($entityType, ['video', 'brevity/story', 'brevity/issue'])) {
@@ -64,6 +65,10 @@ class SessionAggregation extends AbstractAggregation
                 'entity.keyValues'  => $entity->getKeyValues(),
             ],
         ];
+
+        if (isset($campaign['influencer'])) {
+            $upsertObj['$setOnInsert']['influencerId'] = $campaign['influencer'];
+        }
 
         if ('video' === $entityType && 'duration' === $event->getAction()) {
             $upsertObj['$inc']['duration.video'] = $event->getData()['duration'];
@@ -118,33 +123,6 @@ class SessionAggregation extends AbstractAggregation
         return $this;
     }
 
-    protected function createUpsertObject(EventInterface $event)
-    {
-        $campaign = $event->getSession()->getCampaign();
-
-        $eventData = $event->getData();
-        $provider = isset($eventData['provider']) ? $eventData['provider'] : 'Other';
-
-        return [
-            '$setOnInsert'  => [
-                'issueId'       => $campaign['content'],
-                'customerId'    => $event->getSession()->getCustomerId(),
-                'provider'      => $provider,
-                'entity'        => [
-                    'type'      => $event->getEntity()->getType(),
-                    'clientId'  => $event->getEntity()->getClientId(),
-                ],
-                'firstShare'    => new \MongoDate($event->getCreatedAt()->getTimestamp()),
-            ],
-            '$set'          => [
-                'lastShare'    => new \MongoDate($event->getCreatedAt()->getTimestamp()),
-            ],
-            '$inc'          => [
-                'shares'      => 1,
-            ],
-        ];
-    }
-
     /**
      * Determines if this aggregation supports the provided event, account, and group
      *
@@ -160,6 +138,5 @@ class SessionAggregation extends AbstractAggregation
         }
 
         return true;
-        // return $event->getAction() === 'share';
     }
 }

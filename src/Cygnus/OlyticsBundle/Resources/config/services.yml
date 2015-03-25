@@ -13,6 +13,8 @@ parameters:
     cygnus_olytics.aggregation.brevity.acquisition.class: Cygnus\OlyticsBundle\Aggregation\Brevity\AcquisitionAggregation
     cygnus_olytics.aggregation.brevity.share.class: Cygnus\OlyticsBundle\Aggregation\Brevity\ShareAggregation
     cygnus_olytics.aggregation.brevity.session.class: Cygnus\OlyticsBundle\Aggregation\Brevity\SessionAggregation
+    cygnus_olytics.aggregation.brevity.influencer.class: Cygnus\OlyticsBundle\Aggregation\Brevity\InfluencerAggregation
+    cygnus_olytics.aggregation.brevity.first_issues.class: Cygnus\OlyticsBundle\Aggregation\Brevity\FirstCustomerIssueAggregation
     cygnus_olytics.event_hook_manager.class: Cygnus\OlyticsBundle\EventHook\Manager
     cygnus_olytics.event_hook.mongo_user_id.class: Cygnus\OlyticsBundle\EventHook\MongoUserIdHook
 
@@ -56,6 +58,12 @@ services:
         abstract: true
         arguments: [ @cygnus_olytics.index_manager, @doctrine_mongodb.odm.olytics_connection ]
 
+    cygnus_olytics.aggregation.brevity.first_issues:
+        parent: cygnus_olytics.aggregation.abstract
+        class: %cygnus_olytics.aggregation.brevity.first_issues.class%
+        tags:
+            - { name: cygnus_olytics.aggregation }
+
     cygnus_olytics.aggregation.brevity.acquisition:
         parent: cygnus_olytics.aggregation.abstract
         class: %cygnus_olytics.aggregation.brevity.acquisition.class%
@@ -71,6 +79,12 @@ services:
     cygnus_olytics.aggregation.brevity.session:
         parent: cygnus_olytics.aggregation.abstract
         class: %cygnus_olytics.aggregation.brevity.session.class%
+        tags:
+            - { name: cygnus_olytics.aggregation }
+
+    cygnus_olytics.aggregation.brevity.influencer:
+        parent: cygnus_olytics.aggregation.abstract
+        class: %cygnus_olytics.aggregation.brevity.influencer.class%
         tags:
             - { name: cygnus_olytics.aggregation }
 

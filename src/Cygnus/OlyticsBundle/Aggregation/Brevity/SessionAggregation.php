@@ -110,6 +110,9 @@ class SessionAggregation extends AbstractAggregation
         if (isset($result['value']['duration']['idle'])) {
             $activeDuration -= $result['value']['duration']['idle'];
         }
+        if ($activeDuration < 0) {
+            $activeDuration = 0;
+        }
 
         // Now update the session duration
         $builder = $this->createQueryBuilder($dbName, $collName)

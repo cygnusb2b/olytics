@@ -33,7 +33,7 @@ class InfluencerAggregation extends AbstractAggregation
         $dbName = $this->getDbName($accountKey, $groupKey);
         $collName = 'Influencers';
 
-        // $this->createIndexes($dbName, $collName);
+        $this->createIndexes($dbName, $collName);
 
         $campaign = $event->getSession()->getCampaign();
 

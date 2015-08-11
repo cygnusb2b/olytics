@@ -262,12 +262,7 @@
     "pattern": "discobot", 
     "addition_date": "2011/05/03", 
     "url": "http://discoveryengine.com/discobot.html"
-  }, 
-  {
-    "pattern": "heritrix", 
-    "addition_date": "2011/06/21", 
-    "url": "http://crawler.archive.org/"
-  }, 
+  },
   {
     "pattern": "findthatfile", 
     "addition_date": "2011/06/21", 

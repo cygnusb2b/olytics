@@ -57,7 +57,7 @@ cygnus_olytics:
         cygnus:
             products: [vmw, cavc, csn, emsr, fhc, frpc, gip, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
         scomm:
-            products: [nfn, nfl, mni]
+            products: [nfn, nfl, mni, nvp]
         test:
             products: [test]
 

@@ -84,12 +84,16 @@ doctrine_mongodb:
                 w: 1
     document_managers:
         default:
+            retry_connect: 2
+            retry_query: 2
             connection: default
             auto_mapping: true
         db9:
             connection: db9
             auto_mapping: false
         merrick:
+            retry_connect: 2
+            retry_query: 2
             connection: merrick
             auto_mapping: false
 

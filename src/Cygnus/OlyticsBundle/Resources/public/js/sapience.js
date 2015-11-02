@@ -1343,7 +1343,7 @@
             getPageTitle: function() {
                 var elements = document.getElementsByTagName('title');
                 if (elements && this.isDefined(elements[0])) {
-                    return urlDecode(elements[0].text);
+                    return elements[0].text;
                 }
                 return null;
             },

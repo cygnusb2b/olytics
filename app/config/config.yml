@@ -59,7 +59,7 @@ cygnus_olytics:
         indm:
             products: [ien]
         scomm:
-            products: [nfn, nfl, mni, nvp, ihe]
+            products: [nfn, nfl, mni, nvp, ihe, kcp, cltampa, clatl, nvs, wcp, cb]
         test:
             products: [test]
 

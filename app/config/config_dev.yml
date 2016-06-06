@@ -17,6 +17,8 @@ snc_redis:
             type: phpredis
             alias: cache
             dsn: redis://devcache01.cygnuspub.com/2
+            options:
+                connection_persistent: true
 
 cygnus_olytics:
     connection:

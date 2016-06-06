@@ -48,6 +48,8 @@ snc_redis:
             type: phpredis
             alias: cache
             dsn: redis://analytics.xgsurf.ng.0001.use1.cache.amazonaws.com/1
+            options:
+                connection_persistent: true
 
 cygnus_olytics:
     host: olytics.cygnus.com

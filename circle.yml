@@ -16,7 +16,7 @@ machine:
         devdb01.cygnuspub.com: 127.0.0.1
 dependencies:
     pre:
-        - yes '' | pecl install mongo redis
+        - yes '' | pecl install mongo redis-2.2.8
 test:
     override:
         - phpunit -c app/ --log-junit $CIRCLE_TEST_REPORTS/phpunit/junit.xml

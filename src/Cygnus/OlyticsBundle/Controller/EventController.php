@@ -15,7 +15,7 @@ class EventController extends Controller
     {
         // This is legacy handling until the websites are switched
         // REMOVE once complete
-        if ($account != 'test' && $account != 'scomm' && $account != 'indm') {
+        if ($account != 'test' && $account != 'scomm' && $account != 'indm' && $account != 'as3') {
             $accounts = ['acbm', 'cygnus'];
             if (!in_array($account, $accounts)) {
                 // Account is a legacy Vertical key
@@ -63,6 +63,8 @@ class EventController extends Controller
 
         } catch (Exception $e) {
 
+            var_dump($e);
+            die();
             $responseBody = ['created' => false, 'reason'  => 'exception'];
             $responseCode = 500;
             Validator::notifyError($request, $e, $account, $product);

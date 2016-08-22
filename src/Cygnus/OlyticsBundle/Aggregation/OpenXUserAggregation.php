@@ -90,7 +90,11 @@ class OpenXUserAggregation extends AbstractAggregation
             return false;
         }
 
-        if ('ad' !== $event->getEntity()->getType()) {
+        $entity = $event->getEntity();
+        $values = $entity->getKeyValues();
+        $legacy = !isset($values['bp']);
+
+        if ('ad' !== $event->getEntity()->getType() || false === $legacy) {
             // Not an ad event
             return false;
         }

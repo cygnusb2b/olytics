@@ -5,7 +5,7 @@ namespace Cygnus\OlyticsBundle\Aggregation;
 use Cygnus\OlyticsBundle\Model\Metadata\Entity;
 use Cygnus\OlyticsBundle\Model\Event\EventInterface;
 
-class OpenXImpressionAggregation extends AbstractAggregation
+class OpenXImpressionAggregationBP extends AbstractAggregation
 {
     /**
      * Gets the index mapping for this aggregation
@@ -51,7 +51,10 @@ class OpenXImpressionAggregation extends AbstractAggregation
                 // Not an ad request. DNP
                 continue;
             }
-            if (!isset($entity->getKeyValues()['addAdUnit'])) {
+
+
+
+            if (!isset($entity->getKeyValues()['ad_unit'])) {
                 // Not valid. DNP
                 continue;
             }
@@ -89,9 +92,10 @@ class OpenXImpressionAggregation extends AbstractAggregation
      */
     protected function createUpsertObject(EventInterface $event, Entity $entity)
     {
+        $adUnitId = $entity->getKeyValues()['ad_unit'];
         $metadata = [
             'start'     => new \MongoDate(strtotime($event->getCreatedAt()->format('Y-m-01 00:00:00'))),
-            'adUnitId'  => new \MongoInt32($entity->getKeyValues()['addAdUnit']),
+            'adUnitId'  => is_numeric($adUnitId) ? new \MongoInt64($adUnitId) : $adUnitId,
             'keyValues' => $this->getKeyValuesFromRequest($entity->getKeyValues()),
         ];
 
@@ -114,87 +118,80 @@ class OpenXImpressionAggregation extends AbstractAggregation
     public function getKeyValuesFromRequest(array $keyValues)
     {
         $include = array(
-            // 'company_id',
-            // 'content_id',
-            'content_type' => 'contentType',
-            // 'env',
-            'layout' => 'layout',
-            // 'page',
-            // 'pathname',
-            // 'search_term',
-            // 'section_id',
-            'term_vocab_ids' => 'termVocabIds',
-            'frequency_by_id' => 'freqGroupById',
+            'cont_type' => 'contentType',
+            'tax_ids' => 'termVocabIds',
+            'freq_id' => 'freqGroupById',
+            'chan_id' => 'channelId',
+            'sect_id' => 'sectionId',
         );
         $keyValueData = [];
 
-        if (isset($keyValues['addVariable']) && is_array($keyValues['addVariable'])) {
-            foreach ($keyValues['addVariable'] as $key => $value) {
-                if (!isset($include[$key])) continue;
-
-                $newKey = $include[$key];
-
-                if (is_array($value)) {
-                    foreach ($value as $v) {
-                        if (!empty($v)) {
-                            $keyValueData[$newKey][] = $v;
-                        }
-                    }
-                } else {
-                    if (!empty($value)) {
-
-                        if ($key == 'frequency_by_id') {
-
-                            $valueIndex = $value - 1;
-                            $sponsorRemainders = [
-                                '1'   => $valueIndex % 1,
-                                '2'   => $valueIndex % 2,
-                                '3'   => $valueIndex % 3,
-                                '4'   => $valueIndex % 4,
-                            ];
-                            $sponsorSkip = [
-                                0   => (bool) empty($sponsorRemainders[1]),
-                                1   => (bool) empty($sponsorRemainders[2]),
-                                2   => (bool) empty($sponsorRemainders[3]),
-                                3   => (bool) empty($sponsorRemainders[4]),
-                            ];
-
-                            switch (true) {
-                                case ($value == 1):
-                                    $group = '1';
-                                    break;
-                                case ($value < 6):
-                                    $group = '2 - 5';
-                                    break;
-                                case ($value < 10):
-                                    $group = '6 - 9';
-                                    break;
-                                case ($value >= 10):
-                                    $group = '10+';
-                                    break;
-                                default:
-                                    $group = null;
-                                    break;
-                                }
-                            $keyValueData[$newKey][] = $group;
-                            $keyValueData['sponsorSkip'] = $sponsorSkip;
-                        } else {
-                            $keyValueData[$newKey][] = $value;
-                        }
-                    }
-                }
+        foreach ($keyValues as $key => $value) {
+            if (!isset($include[$key])) {
+                continue;
             }
-        }
+            $newKey = $include[$key];
 
-        if (isset($keyValues['addContentTopic'])) {
-            if (is_array($keyValues['addContentTopic'])) {
-                foreach ($keyValues['addContentTopic'] as $value) {
-                    $keyValueData['topicIds'][] = $value;
+            if (is_array($value)) {
+                foreach ($value as $v) {
+                    if (!empty($v)) {
+                        $keyValueData[$newKey][] = $v;
+                    }
                 }
             } else {
-                $keyValueData['topicIds'][] = $keyValues['addContentTopic'];
+                if (empty($value)) {
+                    continue;
+                }
+                if ('freq_id' === $key) {
+                    $valueIndex = $value - 1;
+                    $sponsorRemainders = [
+                        '1'   => $valueIndex % 1,
+                        '2'   => $valueIndex % 2,
+                        '3'   => $valueIndex % 3,
+                        '4'   => $valueIndex % 4,
+                    ];
+                    $sponsorSkip = [
+                        0   => (bool) empty($sponsorRemainders[1]),
+                        1   => (bool) empty($sponsorRemainders[2]),
+                        2   => (bool) empty($sponsorRemainders[3]),
+                        3   => (bool) empty($sponsorRemainders[4]),
+                    ];
+                    switch (true) {
+                        case ($value == 1):
+                            $group = '1';
+                            break;
+                        case ($value < 6):
+                            $group = '2 - 5';
+                            break;
+                        case ($value < 10):
+                            $group = '6 - 9';
+                            break;
+                        case ($value >= 10):
+                            $group = '10+';
+                            break;
+                        default:
+                            $group = null;
+                            break;
+                    }
+                    $keyValueData[$newKey][] = $group;
+                    $keyValueData['sponsorSkip'] = $sponsorSkip;
+                } else {
+                    $keyValueData[$newKey][] = $value;
+                }
             }
         }
+
+        $topicIds = [];
+        if (isset($keyValues['topic_id'])) {
+            $topicIds[] = $keyValues['topic_id'];
+            if (isset($keyValues['sponsor']) && true == $keyValues['sponsor']) {
+                $topicIds[] = 3;
+            }
+        }
+        if (!empty($topicIds)) {
+            $keyValueData['topicIds'] = $topicIds;
+        }
+
 
         $keyValues = [];
         foreach ($keyValueData as $key => $values) {
@@ -273,6 +270,6 @@ class OpenXImpressionAggregation extends AbstractAggregation
         $values = $entity->getKeyValues();
         $legacy = !isset($values['bp']);
 
-        return 'ad' === $entity->getType() && true === $legacy;
+        return 'ad' === $entity->getType() && false === $legacy;
     }
 }

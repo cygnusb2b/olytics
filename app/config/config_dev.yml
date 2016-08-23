@@ -16,13 +16,13 @@ snc_redis:
         cache:
             type: phpredis
             alias: cache
-            dsn: redis://devcache01.cygnuspub.com/2
+            dsn: redis://redis.analytics.as3.io/2
             options:
                 connection_persistent: true
 
 cygnus_olytics:
     connection:
-        server: mongodb://devmongo.cygnus.com:27017
+        server: mongodb://mongo.analytics.as3.io:27017
         options: {}
     host: dev.olytics.cygnus.com
 

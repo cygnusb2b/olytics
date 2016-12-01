@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use \DateTime;
 use \DateTimeZone;
+use \JSMin;
 
 class JsController extends Controller
 {
@@ -48,6 +49,9 @@ class JsController extends Controller
         $expires->setTimestamp(time() + self::EXPIRES);
 
         $content = implode($js, "\r\n");
+        if ('prod' === $this->getParameter('kernel.environment')) {
+            $content = JSMin::minify($content);
+        }
 
         $headers = array(
             'Content-Type'      => 'text/javascript',

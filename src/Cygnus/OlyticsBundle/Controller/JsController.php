@@ -61,9 +61,10 @@ class JsController extends Controller
      */
     protected function buildFile($cacheFilename, $minify)
     {
+        $kernel = $this->get('kernel');
+
         $js = array();
         $lastModified = 0;
-        $kernel = $this->get('kernel');
         foreach ($this->files as $file) {
             $fileLocation = self::RESOURCE_LOC . '/' . $file;
             $path = $kernel->locateResource($fileLocation);

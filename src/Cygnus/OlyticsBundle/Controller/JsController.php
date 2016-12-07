@@ -83,7 +83,6 @@ class JsController extends Controller
         }
 
         file_put_contents($cacheFilename, $content);
-        return $this->buildResponse($content, $lastModified, $minify);
     }
 
     /**

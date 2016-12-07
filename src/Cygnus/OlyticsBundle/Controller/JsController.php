@@ -101,12 +101,7 @@ class JsController extends Controller
         $expires = new DateTime();
         $expires->setTimestamp(time() + self::EXPIRES);
 
-        $headers = array(
-            'Content-Type'      => 'text/javascript',
-            'Content-Length'    => strlen($content),
-        );
-
-        $response = new Response($content, 200, $headers);
+        $response = new Response($content, 200);
         $response->setPublic();
         $response->setExpires($expires);
         $response->setMaxAge(self::EXPIRES);

@@ -12,7 +12,7 @@ cygnus_olytics_event_tracker:
 
 cygnus_js_library:
     pattern:  /{file}.js
-    defaults: { _controller: CygnusOlyticsBundle:Js:index }
+    defaults: { _controller: CygnusOlyticsBundle:Js:index, _format: js }
     requirements:
         file: olytics|sapience
 

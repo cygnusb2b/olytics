@@ -55,11 +55,11 @@ cygnus_olytics:
     host: olytics.cygnus.com
     accounts:
         acbm:
-            products: [fcp, ooh, sdce, fl]
+            products: [fcp, ooh, sdce, fl, gip]
         as3:
             products: [clarity]
         cygnus:
-            products: [vmw, cavc, csn, emsr, fhc, frpc, gip, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
+            products: [vmw, cavc, csn, emsr, fhc, frpc, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
         indm:
             products: [ien]
         scomm:

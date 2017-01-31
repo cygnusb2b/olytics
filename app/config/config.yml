@@ -57,7 +57,7 @@ cygnus_olytics:
         acbm:
             products: [fcp, ooh, sdce, fl]
         as3:
-            products: [clarity]
+            products: [clarity, baseplatform]
         cygnus:
             products: [vmw, cavc, csn, emsr, fhc, frpc, gip, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
         indm:

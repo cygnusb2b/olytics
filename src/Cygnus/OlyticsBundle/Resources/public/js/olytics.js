@@ -596,7 +596,7 @@ if (typeof Olytics !== 'object') {
         {
             var
                 config = {
-                    trackerDomain: 'http://olytics.cygnus.com',
+                    trackerDomain: '//olytics.cygnus.com',
                     baseEndpoint: '/events',
                     endpoint: endpoint || null,
                     domainName: documentAlias.domain,

@@ -1035,7 +1035,7 @@
             },
             referrer: Utils.getReferrer(),
             scrollSelector: window,
-            trackerDomain: 'http://olytics.cygnus.com',
+            trackerDomain: '//olytics.cygnus.com',
             useCookieDomain: false
         };
 

@@ -47,7 +47,7 @@ class MongoUserIdHook implements HookInterface
             return $event;
         }
 
-        if (0 === stripos($customerId, 'id|me')) {
+        if (0 === stripos($customerId, 'id-me')) {
             // IDme ID. Do nothing.
             return $event;
         }

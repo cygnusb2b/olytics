@@ -47,6 +47,11 @@ class MongoUserIdHook implements HookInterface
             return $event;
         }
 
+        if (0 === stripos($customerId, 'id|me')) {
+            // IDme ID. Do nothing.
+            return $event;
+        }
+
         if (!is_string($customerId)) {
             // Unknown identifier. Set null
             $event->getSession()->setCustomerId(null);

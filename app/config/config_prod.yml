@@ -18,3 +18,5 @@ cygnus_olytics:
             replicaSet: analytics
             journal: false
             w: 1
+            connectTimeoutMS: 200
+            maxTimeMS: 10000

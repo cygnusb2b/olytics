@@ -19,4 +19,3 @@ cygnus_olytics:
             journal: false
             w: 1
             connectTimeoutMS: 200
-            maxTimeMS: 10000

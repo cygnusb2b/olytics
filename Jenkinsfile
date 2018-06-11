@@ -16,7 +16,7 @@ node {
           }
           sh "bin/composer install --no-interaction --prefer-dist --no-dev"
         }
-        stage('Test Assets' {
+        stage('Test Assets') {
           sh "php app/console assetic:dump --env=test --no-debug"
         }
         stage('Test Execute') {

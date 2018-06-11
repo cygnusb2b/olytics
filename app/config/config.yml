@@ -55,7 +55,7 @@ cygnus_olytics:
     host: olytics.cygnus.com
     accounts:
         acbm:
-            products: [fcp, ooh, sdce, fl]
+            products: [fcp, ooh, sdce, fl, dmn]
         as3:
             products: [clarity, baseplatform]
         cygnus:

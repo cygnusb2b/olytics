@@ -61,7 +61,7 @@ cygnus_olytics:
         cygnus:
             products: [vmw, cavc, cpa, emsr, fhc, frpc, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
         indm:
-            products: [ien, ddt]
+            products: [ien, ddt, cen]
         scomm:
             products: [nfn, nfl, mni, nvp, ihe, kcp, cltampa, clatl, nvs, wcp, cb]
         test:

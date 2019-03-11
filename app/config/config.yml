@@ -58,6 +58,8 @@ cygnus_olytics:
             products: [fcp, ooh, sdce, fl, dmn, gip]
         as3:
             products: [clarity, baseplatform]
+        bizbash:
+            products: [bzb]
         cygnus:
             products: [vmw, cavc, cpa, emsr, fhc, frpc, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
         indm:

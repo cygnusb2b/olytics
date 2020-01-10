@@ -60,6 +60,8 @@ cygnus_olytics:
             products: [clarity, baseplatform]
         bizbash:
             products: [bzb]
+        ebm:
+            products: [lfw]
         cygnus:
             products: [vmw, cavc, cpa, emsr, fhc, frpc, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
         indm:

@@ -19,10 +19,10 @@ node {
         stage('Test Assets') {
           sh "php app/console assetic:dump --env=test --no-debug"
         }
-        stage('Test Execute') {
-          sh "bin/phpunit -c app --log-junit unitTestReport.xml"
-          junit "unitTestReport.xml"
-        }
+//        stage('Test Execute') {
+//          sh "bin/phpunit -c app --log-junit unitTestReport.xml"
+//          junit "unitTestReport.xml"
+//        }
       }
     }
   } catch (e) {

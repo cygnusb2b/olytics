@@ -61,7 +61,7 @@ cygnus_olytics:
         bizbash:
             products: [bzb]
         ebm:
-            products: [lfw]
+            products: [bow, btr, cim, de, diq, dte, ee, fcn, frn, gxc, hci, hpn, ias, ils, leds, lfw, lw, mae, mlo, msw, os, pcm, pia, pmm, rdh, stw, su, up, vsd, wto, ww]
         cygnus:
             products: [vmw, cavc, cpa, emsr, fhc, frpc, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
         indm:

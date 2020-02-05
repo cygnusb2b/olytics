@@ -29,6 +29,7 @@ class ContentArchiveAggregation extends AbstractAggregation
     {
         return [
             ['keys' => ['month' => 1, 'contentId' => 1, 'userId' => 1, 'sessionId' => 1], 'options' => ['unique' => true]],
+            ['keys' => ['month' => 1, 'contentId' => 1, 'userId' => 1], 'options' => []],
             ['keys' => ['lastAccessed' => 1], 'options' => ['expireAfterSeconds' => 60*60*24*45]],
         ];
     }

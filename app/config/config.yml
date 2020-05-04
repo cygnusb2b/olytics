@@ -56,6 +56,8 @@ cygnus_olytics:
     accounts:
         acbm:
             products: [fcp, ooh, sdce, fl, dmn, gip]
+        ascend:
+            products: [hearthub]
         as3:
             products: [clarity, baseplatform]
         bizbash:

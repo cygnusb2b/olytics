@@ -63,7 +63,7 @@ cygnus_olytics:
         bizbash:
             products: [bzb]
         ebm:
-            products: [bow, btr, cim, de, diq, dte, ee, fcn, frn, gxc, hci, hpn, ias, ils, leds, lfw, lw, mae, mlo, msw, os, pcm, pia, pmm, rdh, stw, su, taxpracticeadvisor, up, vsd, wto, ww]
+            products: [bow, btr, cim, de, diq, dte, ee, fcn, frn, gxc, hci, hpn, ias, ils, leds, lfw, lw, mae, mlo, msw, os, pcm, pia, pmm, rdh, stw, su, taxpracticeadvisor, up, vsd, wto, ww, americanmachinist]
         cygnus:
             products: [vmw, cavc, cpa, emsr, fhc, frpc, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
         indm:

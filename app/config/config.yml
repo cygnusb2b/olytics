@@ -54,24 +54,10 @@ snc_redis:
 cygnus_olytics:
     host: olytics.cygnus.com
     accounts:
-        acbm:
-            products: [fcp, ooh, sdce, fl, dmn, gip]
-        ascend:
-            products: [hearthub]
-        as3:
-            products: [clarity, baseplatform]
-        bizbash:
-            products: [bzb]
         ebm:
             products: [bow, btr, cim, de, diq, dte, ee, fcn, frn, gxc, hci, hpn, ias, ils, leds, lfw, lw, mae, mlo, msw, os, pcm, pia, pmm, rdh, stw, su, ogj, taxpracticeadvisor, up, vsd, wto, ww, americanmachinist, asumag, bulktransporter, contractingbusiness, contractormag, dte, ecmweb, ehstoday, electricalmarketing, electronicdesign, ewweb, fleetowner, forgingmagazine, foundrymag, hpac, hydraulicspneumatics, industryweek, machinedesign, mhlnews, mwrf, newequipment, powerelectronics, refrigeratedtransporter, rermag, sourcetoday, tdworld, trailerbodybuilders, trucker, truckfleetmro, fleetmaintenance]
         cygnus:
-            products: [vmw, cavc, cpa, emsr, fhc, frpc, ll, mass, mprc, ofcr, siw, vspc, 'siw-brevity']
-        indm:
-            products: [ien, ddt, cen]
-        pmmi:
-            products: [all, mundo]
-        scomm:
-            products: [nfn, nfl, mni, nvp, ihe, kcp, cltampa, clatl, nvs, wcp, cb]
+            products: [vmw, cavc, cpa, emsr, fhc, frpc, ll, mass, mprc, ofcr, siw, vspc]
         test:
             products: [test]
 
